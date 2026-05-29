@@ -1,0 +1,100 @@
+{
+  "slug": "effector-useful-links",
+  "title": "effector useful links",
+  "preview": "полезные ссылки для работы с effector",
+  "tags": ["effector", "links"],
+  "subtitle": [
+    { "title": "effector", "highlight": false },
+    { "title": "links", "highlight": true }
+  ],
+  "content": {
+    "time": 1748000000000,
+    "version": "2.30.7",
+    "blocks": [
+      {
+        "id": "intro",
+        "type": "paragraph",
+        "data": {
+          "text": "Effector — мощный инструмент для управления состоянием приложений позволяющий отделить бизнес логику от рендера"
+        }
+      },
+      {
+        "id": "link1",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://effector.dev/\" target=\"_blank\">effector.dev</a> — официальная дока (там актуальные линки на нейродоки)"
+        }
+      },
+      {
+        "id": "link2",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://patronum.effector.dev/\" target=\"_blank\">patronum.effector.dev</a> — хелперы для упрощения жизни"
+        }
+      },
+      {
+        "id": "link3",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://withease.effector.dev/\" target=\"_blank\">withease.effector.dev</a> — набор классных библиотек"
+        }
+      },
+      {
+        "id": "link4",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://github.com/russia-consulate/webapp/tree/main\" target=\"_blank\">russia-consulate/webapp</a> — проект с хорошим конфигом"
+        }
+      },
+      {
+        "id": "link5",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://github.com/etozhealkhipce/spa-front-starter\" target=\"_blank\">etozhealkhipce/spa-front-starter</a> — мой стартер проект для гитхаба (на основе проекта выше)"
+        }
+      },
+      {
+        "id": "link6",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://github.com/Kelin2025/effector-factorio\" target=\"_blank\">Kelin2025/effector-factorio</a> — крутой проект для переиспользования model + ui"
+        }
+      },
+      {
+        "id": "link7",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://github.com/yumauri/effector-storage\" target=\"_blank\">yumauri/effector-storage</a> — синхронизация сторов с внешними хранилищами (ls, query)"
+        }
+      },
+      {
+        "id": "link8",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://atomic-router.github.io/\" target=\"_blank\">atomic-router.github.io</a> — роутер с поддержкой effector"
+        }
+      },
+      {
+        "id": "link9",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://github.com/AlexeyDuybo/effector-action\" target=\"_blank\">AlexeyDuybo/effector-action</a> — управление событиями в императивном стиле"
+        }
+      },
+      {
+        "id": "link10",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://eslint.effector.dev/\" target=\"_blank\">eslint.effector.dev</a> — eslint плагины"
+        }
+      },
+      {
+        "id": "link11",
+        "type": "paragraph",
+        "data": {
+          "text": "<a href=\"https://github.com/effector/next\" target=\"_blank\">effector/next</a> — адаптер для next.js"
+        }
+      }
+    ]
+  }
+}

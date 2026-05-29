@@ -1,21 +1,17 @@
-export interface TextElement {
-  type: 'text';
-  content: string;
-}
-
-export interface LinkElement {
-  type: 'link';
-  url: string;
-  external: boolean;
-}
-
-export type ContentElement = TextElement | LinkElement;
-
-export interface ContentParagraph {
+export interface EditorBlock {
   id: string;
-  elements: ContentElement[];
+  type: string;
+  data: Record<string, unknown>;
 }
 
-export interface NoteContent {
-  paragraphs: ContentParagraph[];
+export interface EditorData {
+  time?: number;
+  blocks: EditorBlock[];
+  version?: string;
+  meta?: Record<string, unknown>;
+}
+
+export interface SubtitleItem {
+  title: string;
+  highlight: boolean;
 }

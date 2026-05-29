@@ -1,0 +1,23 @@
+app:
+  name: sskd-backend
+  port: 3000
+  replicas: 1
+  healthPath: /api
+
+  ingress:
+    enabled: true
+    host: admin.sskd.tech
+
+  env:
+    NODE_ENV: "production"
+    PORT: "3000"
+    POSTGRES_HOST: "sskd-postgres"       # k8s service name, same namespace
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "postgres"
+    POSTGRES_DB: "senior_script_kiddie"
+    # POSTGRES_PASSWORD is injected from sskd-backend-secrets (see deploy.yml)
+
+  persistence:
+    enabled: true
+    size: 5Gi
+    mountPath: /app/uploads   # uploaded images stored here

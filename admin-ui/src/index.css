@@ -1,0 +1,54 @@
+@import "tailwindcss";
+@import "@block-forge/block-forge-editor/dist/index.css";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── block-forge overrides ─────────────────────────────────── */
+
+/* Remove the sm:70% centered layout → full width */
+.bf-mx-auto {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Taller editor: keep internal margins, just raise the floor */
+.bf-min-h-screen {
+  min-height: 520px !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* EditorJS: full-width content, minimal side padding */
+.ce-block__content,
+.ce-toolbar__content {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.codex-editor__redactor {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  padding-bottom: 24px !important;
+}
+.ce-toolbar__actions {
+  right: 0 !important;
+}
+.codex-editor {
+  font-family: "Inter", system-ui, sans-serif !important;
+}
+
+/* Hide File/Settings/Help menubar (we handle save in our form) */
+[role="menubar"] {
+  display: none !important;
+}

@@ -1,43 +1,28 @@
-import {
-  IsString,
-  IsEnum,
-  IsBoolean,
-  IsUrl,
-  IsArray,
-  ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+// EditorJS block-forge-editor output types used in note content DTOs
+import { IsString, IsOptional, IsObject } from 'class-validator';
 
-export class TextElementDto {
-  @IsEnum(['text'])
-  type: 'text';
-
-  @IsString()
-  content: string;
-}
-
-export class LinkElementDto {
-  @IsEnum(['link'])
-  type: 'link';
-
-  @IsUrl()
-  url: string;
-
-  @IsBoolean()
-  external: boolean;
-}
-
-export class ContentParagraphDto {
+export class EditorBlockDto {
   @IsString()
   id: string;
 
-  @IsArray()
-  elements: (TextElementDto | LinkElementDto)[];
+  @IsString()
+  type: string;
+
+  @IsObject()
+  data: Record<string, unknown>;
 }
 
-export class NoteContentDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ContentParagraphDto)
-  paragraphs: ContentParagraphDto[];
+export class EditorDataDto {
+  @IsOptional()
+  time?: number;
+
+  blocks: EditorBlockDto[];
+
+  @IsOptional()
+  @IsString()
+  version?: string;
+
+  @IsOptional()
+  @IsObject()
+  meta?: Record<string, unknown>;
 }

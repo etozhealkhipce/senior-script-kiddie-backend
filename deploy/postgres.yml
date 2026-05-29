@@ -1,0 +1,95 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sskd-postgres-pvc
+  namespace: sskd
+  labels:
+    app: sskd-postgres
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sskd-postgres-deployment
+  namespace: sskd
+  labels:
+    app: sskd-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sskd-postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: sskd-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: senior_script_kiddie
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sskd-postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          livenessProbe:
+            exec:
+              command: [pg_isready, -U, postgres, -d, senior_script_kiddie]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, postgres, -d, senior_script_kiddie]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: sskd-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sskd-postgres
+  namespace: sskd
+  labels:
+    app: sskd-postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: sskd-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

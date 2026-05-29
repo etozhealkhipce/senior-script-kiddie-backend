@@ -2,6 +2,8 @@
 /dist
 /node_modules
 /build
+/admin-ui/dist
+/admin-ui/node_modules
 
 # Logs
 logs
@@ -55,3 +57,4 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+.admin-token
