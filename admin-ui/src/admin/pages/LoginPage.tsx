@@ -10,21 +10,19 @@ interface LoginPageProps {
 export const LoginPage: FC<LoginPageProps> = ({ inputToken, authError, onTokenChange, onLogin }) => (
   <div className="adm-login-stage">
     <div className="adm-login-card">
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <div className="adm-brand-mark" style={{ width: 38, height: 38, borderRadius: 9, fontSize: 17 }}>
-          s
-        </div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="adm-brand-mark w-[38px] h-[38px] rounded-[9px] text-[17px]">s</div>
         <div>
-          <p style={{ fontWeight: 600, fontSize: 15, letterSpacing: "-0.01em", color: "var(--text)" }}>
+          <p className="font-semibold text-[15px] tracking-[-0.01em] text-content">
             <b>sskd</b>
-            <span style={{ color: "var(--text-ghost)", margin: "0 5px", fontWeight: 400 }}>/</span>
+            <span className="text-ghost mx-[5px] font-normal">/</span>
             <b>admin</b>
           </p>
-          <p style={{ fontSize: 12.5, color: "var(--text-faint)", marginTop: 2 }}>Sign in to continue</p>
+          <p className="text-[12.5px] text-faint mt-0.5">Sign in to continue</p>
         </div>
       </div>
 
-      <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, marginBottom: 7, display: "block" }}>
+      <label className="text-xs text-muted font-medium mb-[7px] block">
         Access token
       </label>
       <input
@@ -37,7 +35,7 @@ export const LoginPage: FC<LoginPageProps> = ({ inputToken, authError, onTokenCh
         className="adm-token-input"
       />
       {authError && (
-        <p style={{ fontSize: 12, color: "oklch(0.55 0.18 25)", marginBottom: 8 }}>{authError}</p>
+        <p className="text-xs text-error mb-2">{authError}</p>
       )}
       <button onClick={onLogin} disabled={!inputToken.trim()} className="adm-login-btn">
         Continue →

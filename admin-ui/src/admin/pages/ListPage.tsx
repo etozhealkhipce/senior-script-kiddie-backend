@@ -36,17 +36,13 @@ export const ListPage: FC<ListPageProps> = ({ view, visibleNotes, loading, onNew
     </div>
 
     {loading ? (
-      <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}>
+      <div className="flex justify-center py-20">
         <div className="adm-spinner" />
       </div>
     ) : visibleNotes.length === 0 ? (
-      <div style={{ textAlign: "center", padding: "80px 0" }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
-          No entries here yet
-        </p>
-        <p style={{ color: "var(--text-faint)", fontSize: 13, marginBottom: 20 }}>
-          Create your first entry to get started
-        </p>
+      <div className="text-center py-20">
+        <p className="text-muted text-sm font-medium mb-1">No entries here yet</p>
+        <p className="text-faint text-[13px] mb-5">Create your first entry to get started</p>
         <button className="adm-btn adm-btn-ghost" onClick={onNew}>
           <Plus size={15} /> New entry
         </button>

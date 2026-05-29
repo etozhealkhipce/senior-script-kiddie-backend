@@ -51,12 +51,8 @@ export const AdminNotes: FC = () => {
 
   return (
     <div className="adm-device-shell">
-      <div
-        className="adm-app"
-        data-drawer={drawerOpen ? "true" : undefined}
-        style={{ color: "var(--text)" }}
-      >
-        {/* Scrim — closes drawer on mobile tap */}
+      <div className="adm-app" data-drawer={drawerOpen ? "true" : undefined}>
+
         <div className="adm-scrim" onClick={() => setDrawerOpen(false)} />
 
         <Sidebar
@@ -74,7 +70,6 @@ export const AdminNotes: FC = () => {
           <MobileBar title={mobileTitle} onMenuClick={() => setDrawerOpen(true)} />
 
           <div className="adm-main-scroll">
-            {/* Editor view */}
             {showForm && (
               <EditorPage
                 form={form}
@@ -89,7 +84,6 @@ export const AdminNotes: FC = () => {
               />
             )}
 
-            {/* List views */}
             {!showForm && view !== "images" && (
               <ListPage
                 view={view}
@@ -101,7 +95,6 @@ export const AdminNotes: FC = () => {
               />
             )}
 
-            {/* Image library */}
             {!showForm && view === "images" && (
               <ImageLibrary
                 uploadedImages={uploadedImages}

@@ -43,7 +43,7 @@ export const ImageLibrary: FC<ImageLibraryProps> = ({
       </div>
 
       {uploadedImages.length === 0 ? (
-        <p style={{ color: "var(--text-faint)", fontSize: 13.5 }}>No images uploaded yet.</p>
+        <p className="text-faint text-[13.5px]">No images uploaded yet.</p>
       ) : (
         <div className="adm-lib-grid">
           {uploadedImages.map((img) => (

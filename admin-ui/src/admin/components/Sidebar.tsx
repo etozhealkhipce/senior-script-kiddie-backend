@@ -40,50 +40,24 @@ export const Sidebar: FC<SidebarProps> = ({
   return (
     <aside className="adm-sidebar">
       <div className="adm-brand">
-        <div className="adm-brand-mark" style={{ width: 28, height: 28, fontSize: 14 }}>s</div>
-        <span style={{ fontWeight: 600, fontSize: 14.5, letterSpacing: "-0.01em" }}>sskd</span>
+        <div className="adm-brand-mark w-7 h-7 text-sm">s</div>
+        <span className="font-semibold text-[14.5px] tracking-[-0.01em]">sskd</span>
       </div>
 
       <nav className="adm-nav">
-        <NavItem
-          icon={<LayoutList size={16} />}
-          label="All entries"
-          count={notes.length}
-          active={isActive("all")}
-          onClick={() => onNavigate("all")}
-        />
-        <NavItem
-          icon={<FileText size={16} />}
-          label="Notes"
-          count={notesCount}
-          active={isActive("note")}
-          onClick={() => onNavigate("note")}
-        />
-        <NavItem
-          icon={<Briefcase size={16} />}
-          label="Work"
-          count={workCount}
-          active={isActive("work")}
-          onClick={() => onNavigate("work")}
-        />
+        <NavItem icon={<LayoutList size={16} />} label="All entries" count={notes.length} active={isActive("all")} onClick={() => onNavigate("all")} />
+        <NavItem icon={<FileText size={16} />} label="Notes" count={notesCount} active={isActive("note")} onClick={() => onNavigate("note")} />
+        <NavItem icon={<Briefcase size={16} />} label="Work" count={workCount} active={isActive("work")} onClick={() => onNavigate("work")} />
 
-        <div style={{ height: 1, background: "var(--border-soft)", margin: "8px 4px" }} />
+        <div className="h-px bg-line-soft my-2 mx-1" />
 
-        <NavItem
-          icon={<ImageIcon size={16} />}
-          label="Images"
-          count={uploadedImages.length}
-          active={isActive("images")}
-          onClick={() => onNavigate("images")}
-        />
+        <NavItem icon={<ImageIcon size={16} />} label="Images" count={uploadedImages.length} active={isActive("images")} onClick={() => onNavigate("images")} />
       </nav>
 
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
 
       <button className="adm-signout" onClick={onLogout}>
-        <span className="adm-nav-ico" style={{ display: "grid", placeItems: "center" }}>
-          <LogOut size={16} />
-        </span>
+        <span className="adm-nav-ico grid place-items-center"><LogOut size={16} /></span>
         Sign out
       </button>
     </aside>

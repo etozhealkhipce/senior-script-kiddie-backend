@@ -12,9 +12,9 @@ export const MobileBar: FC<MobileBarProps> = ({ title, onMenuClick }) => (
       <Menu size={20} />
     </button>
     <div className="adm-mb-brand">
-      <div className="adm-brand-mark" style={{ width: 24, height: 24, fontSize: 12 }}>s</div>
+      <div className="adm-brand-mark w-6 h-6 text-xs">s</div>
       <span className="adm-mb-title">{title}</span>
     </div>
-    <div style={{ width: 38 }} />
+    <div className="w-[38px]" />
   </div>
 );

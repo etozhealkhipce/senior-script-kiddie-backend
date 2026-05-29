@@ -28,21 +28,20 @@ export const TagEditor: FC<TagEditorProps> = ({ items, onChange }) => {
   };
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+    <div className="flex flex-wrap gap-2 items-center">
       {items.map((item, i) => (
         <span
           key={`${item.title}-${i}`}
-          className="adm-tag"
-          style={{
-            background: item.highlight ? "var(--tag-amber-bg)" : "var(--tag-gray-bg)",
-            color: item.highlight ? "var(--tag-amber-tx)" : "var(--tag-gray-tx)",
-            borderColor: item.highlight ? "var(--tag-amber-bd)" : "var(--tag-gray-bd)",
-          }}
+          className={`adm-tag ${
+            item.highlight
+              ? "bg-tag-hl text-tag-hl-text border-tag-hl-border"
+              : "bg-tag-base text-tag-base-text border-tag-base-border"
+          }`}
         >
           <button
             type="button"
             title={item.highlight ? "Remove highlight" : "Highlight"}
-            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}
+            className="bg-transparent border-none p-0 cursor-pointer text-inherit font-inherit text-[length:inherit]"
             onClick={() => onChange(items.map((t, j) => j === i ? { ...t, highlight: !t.highlight } : t))}
           >
             {item.title}
@@ -53,12 +52,12 @@ export const TagEditor: FC<TagEditorProps> = ({ items, onChange }) => {
             onClick={() => onChange(items.filter((_, j) => j !== i))}
             aria-label={`Remove ${item.title}`}
           >
-            <X style={{ width: 9, height: 9 }} />
+            <X size={9} />
           </button>
         </span>
       ))}
       <span className="adm-tag-add" onClick={() => inputRef.current?.focus()}>
-        <Plus style={{ width: 11, height: 11 }} />
+        <Plus size={11} />
         <input
           ref={inputRef}
           value={input}

@@ -25,7 +25,7 @@ export const EditorPage: FC<EditorPageProps> = ({
 
   return (
     <div className="adm-main-inner">
-      <div className="adm-editor-wrap" style={{ color: "var(--text)" }}>
+      <div className="adm-editor-wrap text-content">
 
         <button className="adm-back-link" onClick={onCancel}>
           <ChevronLeft size={15} />
@@ -44,9 +44,7 @@ export const EditorPage: FC<EditorPageProps> = ({
           className="adm-doc-title"
         />
 
-        {/* Meta block */}
         <div className="adm-meta">
-
           {/* Type */}
           <div className="adm-meta-row">
             <div className="adm-meta-label">
@@ -71,10 +69,10 @@ export const EditorPage: FC<EditorPageProps> = ({
           {/* Slug */}
           <div className="adm-meta-row">
             <div className="adm-meta-label">
-              <span className="adm-meta-label-ico" style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 13 }}>/</span>
+              <span className="adm-meta-label-ico font-mono text-[13px]">/</span>
               Slug
             </div>
-            <div className="adm-meta-field" style={{ flexWrap: "nowrap" }}>
+            <div className="adm-meta-field flex-nowrap">
               <span className="adm-slug-prefix">/{slugFolder}/</span>
               <input
                 value={form.slug}
@@ -88,10 +86,10 @@ export const EditorPage: FC<EditorPageProps> = ({
           {/* Preview */}
           <div className="adm-meta-row">
             <div className="adm-meta-label">
-              <span className="adm-meta-label-ico" style={{ fontSize: 14 }}>≡</span>
+              <span className="adm-meta-label-ico text-sm">≡</span>
               Preview
             </div>
-            <div className="adm-meta-field" style={{ alignItems: "flex-start" }}>
+            <div className="adm-meta-field items-start">
               <textarea
                 value={form.preview}
                 onChange={(e) => onFormChange({ preview: e.target.value })}
@@ -103,12 +101,12 @@ export const EditorPage: FC<EditorPageProps> = ({
           </div>
 
           {/* Tags */}
-          <div className="adm-meta-row" style={{ alignItems: "start" }}>
+          <div className="adm-meta-row items-start">
             <div className="adm-meta-label">
-              <span className="adm-meta-label-ico" style={{ fontSize: 13, fontWeight: 600 }}>#</span>
+              <span className="adm-meta-label-ico text-[13px] font-semibold">#</span>
               Tags
             </div>
-            <div className="adm-meta-field" style={{ paddingTop: 6 }}>
+            <div className="adm-meta-field pt-[6px]">
               <TagEditor
                 items={form.tagItems}
                 onChange={(tagItems) => onFormChange({ tagItems })}
@@ -121,7 +119,7 @@ export const EditorPage: FC<EditorPageProps> = ({
             <>
               <div className="adm-meta-row">
                 <div className="adm-meta-label">
-                  <span className="adm-meta-label-ico" style={{ fontSize: 13 }}>↗</span>
+                  <span className="adm-meta-label-ico text-[13px]">↗</span>
                   Link URL
                 </div>
                 <div className="adm-meta-field">
@@ -135,7 +133,7 @@ export const EditorPage: FC<EditorPageProps> = ({
               </div>
               <div className="adm-meta-row">
                 <div className="adm-meta-label">
-                  <span className="adm-meta-label-ico" style={{ fontSize: 13, fontWeight: 600 }}>T</span>
+                  <span className="adm-meta-label-ico text-[13px] font-semibold">T</span>
                   Link text
                 </div>
                 <div className="adm-meta-field">
@@ -151,19 +149,9 @@ export const EditorPage: FC<EditorPageProps> = ({
           )}
         </div>
 
-        {/* Content divider */}
         <div className="adm-content-divider"><span>Content</span></div>
 
-        {/* Editor */}
-        <div
-          style={{
-            borderRadius: "var(--r-lg)",
-            overflow: "hidden",
-            marginBottom: 24,
-            border: "1px solid var(--border)",
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
+        <div className="rounded-lg overflow-hidden mb-6 border border-line shadow-sm">
           <BlockForgeEditor
             key={editorKey}
             id={`editor-${editorKey}`}
@@ -176,8 +164,7 @@ export const EditorPage: FC<EditorPageProps> = ({
           />
         </div>
 
-        {/* Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+        <div className="flex items-center gap-2 pt-5 border-t border-line">
           <button
             onClick={() => onSave()}
             disabled={saving || !form.title || !form.slug}
@@ -185,9 +172,7 @@ export const EditorPage: FC<EditorPageProps> = ({
           >
             {saving ? "Saving…" : editingId ? `Update ${form.contentType}` : `Publish ${form.contentType}`}
           </button>
-          <button onClick={onCancel} className="adm-btn-discard">
-            Discard
-          </button>
+          <button onClick={onCancel} className="adm-btn-discard">Discard</button>
         </div>
 
       </div>
