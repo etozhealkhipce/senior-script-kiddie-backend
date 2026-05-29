@@ -20,7 +20,6 @@ import { AdminTokenGuard } from '../common/guards/admin-token.guard';
 @Controller('notes')
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
-
   @Post()
   @UseGuards(AdminTokenGuard)
   create(@Body() createNoteDto: CreateNoteDto) {
