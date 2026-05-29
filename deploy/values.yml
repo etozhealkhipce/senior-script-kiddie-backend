@@ -1,23 +1,44 @@
 app:
   name: sskd-backend
-  port: 3000
+  namespace: sskd
   replicas: 1
+  port: 3000
   healthPath: /api
 
   ingress:
     enabled: true
     host: admin.sskd.tech
 
+  initContainers:
+    - name: wait-for-db
+      image: postgres:16-alpine
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "Waiting for database..."
+          until pg_isready -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${POSTGRES_USER}" 2>/dev/null; do
+            echo "Database is unavailable - sleeping"
+            sleep 2
+          done
+          echo "Database is ready!"
+      env:
+        POSTGRES_HOST: sskd-postgres
+        POSTGRES_PORT: "5432"
+        POSTGRES_USER: postgres
+
   env:
     NODE_ENV: "production"
     PORT: "3000"
-    POSTGRES_HOST: "sskd-postgres"       # k8s service name, same namespace
+    POSTGRES_HOST: "sskd-postgres"
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "postgres"
     POSTGRES_DB: "senior_script_kiddie"
-    # POSTGRES_PASSWORD is injected from sskd-backend-secrets (see deploy.yml)
+
+  envFrom:
+    - secretRef:
+        name: sskd-backend-secrets
 
   persistence:
     enabled: true
     size: 5Gi
-    mountPath: /app/uploads   # uploaded images stored here
+    mountPath: /app/uploads

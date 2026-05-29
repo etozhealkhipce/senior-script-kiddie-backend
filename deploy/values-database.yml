@@ -1,0 +1,36 @@
+app:
+  name: sskd-postgres
+  namespace: sskd
+  replicas: 1
+  port: 5432
+
+  image:
+    repository: postgres
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+
+  envFrom:
+    - secretRef:
+        name: sskd-postgres-secrets
+
+  livenessProbe: null
+  readinessProbe: null
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
+
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: local-path
+    mountPath: /var/lib/postgresql/data
+
+  ingress:
+    enabled: false

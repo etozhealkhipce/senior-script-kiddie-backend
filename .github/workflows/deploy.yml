@@ -5,47 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  # Step 1: ensure Postgres is running with a PVC before the app deploys
-  deploy-postgres:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Copy postgres manifest to server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: deploy/postgres.yml
-          target: /tmp/deploy-sskd-postgres/
-
-      - name: Apply postgres to k3s
-        uses: appleboy/ssh-action@master
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: POSTGRES_PASSWORD
-          script: |
-            # Ensure namespace exists
-            kubectl create namespace sskd --dry-run=client -o yaml | kubectl apply -f -
-
-            # Create/update the Postgres password secret from the GitHub secret
-            kubectl create secret generic sskd-postgres-secret \
-              --namespace=sskd \
-              --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-              --dry-run=client -o yaml | kubectl apply -f -
-
-            # Apply Postgres Deployment + Service + PVC (idempotent)
-            kubectl apply -f /tmp/deploy-sskd-postgres/deploy/postgres.yml
-            rm -rf /tmp/deploy-sskd-postgres
-
-  # Step 2: build and deploy the NestJS backend (waits for postgres)
-  deploy-backend:
-    needs: deploy-postgres
+  deploy:
     uses: etozhealkhipce/senior-script-kiddie-k3s/.github/workflows/deploy-app.yml@main
     with:
       app_name: sskd-backend

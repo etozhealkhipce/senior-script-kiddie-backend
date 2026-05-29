@@ -1,0 +1,82 @@
+name: Deploy Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm database deployment'
+        required: true
+        default: ""
+
+env:
+  NAMESPACE: sskd
+  BASE_REPO: etozhealkhipce/senior-script-kiddie-k3s
+
+jobs:
+  deploy-database:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'deploy'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: DEPLOY DATABASE
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DB_PASS: ${{ secrets.POSTGRES_PASSWORD }}
+          REPO: ${{ github.repository }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DB_PASS,REPO
+          script: |
+            set -e
+            export KUBECONFIG=~/.kube/config
+
+            echo "CREATING NAMESPACE..."
+            kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+            echo "CREATING DATABASE SECRETS..."
+
+            DB_USER_B64=$(echo -n "postgres" | base64)
+            DB_PASS_B64=$(echo -n "$DB_PASS" | base64)
+            DB_NAME_B64=$(echo -n "senior_script_kiddie" | base64)
+
+            cat << EOF | kubectl apply -f -
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: sskd-postgres-secrets
+              namespace: ${{ env.NAMESPACE }}
+            type: Opaque
+            data:
+              POSTGRES_USER: ${DB_USER_B64}
+              POSTGRES_PASSWORD: ${DB_PASS_B64}
+              POSTGRES_DB: ${DB_NAME_B64}
+            EOF
+
+            echo "DATABASE SECRETS CREATED"
+
+            cd /tmp && rm -rf deploy-sskd-postgres
+            mkdir deploy-sskd-postgres && cd deploy-sskd-postgres
+
+            git clone --depth 1 https://github.com/${{ env.BASE_REPO }}.git base
+            git clone --depth 1 https://github.com/${REPO}.git consumer
+
+            cd base/charts/sskd-app
+            helm dependency update
+
+            echo "DEPLOYING DATABASE..."
+            helm upgrade --install sskd-postgres . \
+              --namespace ${{ env.NAMESPACE }} \
+              -f /tmp/deploy-sskd-postgres/consumer/deploy/values-database.yml \
+              --wait --timeout 10m
+
+            echo "WAITING FOR DATABASE TO BE READY..."
+            kubectl wait --for=condition=ready pod -l app=sskd-postgres -n ${{ env.NAMESPACE }} --timeout=300s
+
+            echo "DATABASE DEPLOYED SUCCESSFULLY!"
+            kubectl get pods -n ${{ env.NAMESPACE }} -l app=sskd-postgres
+            kubectl get pvc -n ${{ env.NAMESPACE }} | grep sskd-postgres
+
+            rm -rf /tmp/deploy-sskd-postgres
