@@ -6,6 +6,23 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* ── Notion color palette ──────────────────────────────────── */
+:root {
+  --n-text:        #37352f;
+  --n-text-s:      rgba(55, 53, 47, 0.65);
+  --n-text-m:      rgba(55, 53, 47, 0.45);
+  --n-text-p:      rgba(55, 53, 47, 0.35);
+  --n-border:      rgba(55, 53, 47, 0.09);
+  --n-border-m:    rgba(55, 53, 47, 0.16);
+  --n-hover:       rgba(55, 53, 47, 0.06);
+  --n-active:      rgba(55, 53, 47, 0.10);
+  --n-sidebar:     #f7f6f3;
+  --n-blue-bg:     rgba(35, 131, 226, 0.12);
+  --n-blue-text:   #2383e2;
+  --n-gray-bg:     rgba(227, 226, 224, 0.6);
+  --n-amber-bg:    rgba(253, 224, 71, 0.35);
+}
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -51,4 +68,14 @@ body {
 /* Hide File/Settings/Help menubar (we handle save in our form) */
 [role="menubar"] {
   display: none !important;
+}
+
+/* Remove leftover top gap after hiding the menubar.
+   .bf-my-6 adds 1.5rem top margin on the outer wrapper;
+   .bf-m-8 adds 2rem on the editor mount div. Zero both. */
+.bf-my-6 {
+  margin-top: 0 !important;
+}
+.bf-m-8 {
+  margin-top: 0 !important;
 }

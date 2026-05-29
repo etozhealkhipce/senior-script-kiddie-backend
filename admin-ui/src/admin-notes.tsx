@@ -1,20 +1,33 @@
+import Marker from "@editorjs/marker";
 import { BlockForgeEditor } from "@block-forge/block-forge-editor";
-import { type FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { sileo } from "sileo";
+import {
+  Briefcase,
+  ChevronLeft,
+  FileText,
+  Image as ImageIcon,
+  LayoutList,
+  LogOut,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
+import { type FC, useCallback, useEffect, useRef, useState } from "react";
 import type { NoteApiData, SubtitleItem } from "./types";
 
-// Stable reference — MUST be outside component or memoized.
-// Inline arrays recreate on every render → useEditor sees new deps → reloads tools → destroys EditorJS.
-const EDITOR_TOOLS: string[] = ["paragraph", "list", "table", "divider", "quote", "code", "imageSingle", "imageGallery"];
+// ── Stable module-level constants ─────────────────────────────────────────────
+const EDITOR_TOOLS: string[] = [
+  "paragraph", "list", "table", "divider", "quote", "code", "imageSingle", "imageGallery",
+];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const EDITOR_INLINE_TOOLS: Record<string, any> = { marker: { class: Marker } };
 
-// Auto-upload base64 data URLs from block-forge imageSingle/imageGallery to the server.
-// block-forge has no custom uploader hook — it stores files as data:image/...;base64,...
-// We intercept on save and replace them with proper /uploads/... URLs.
+// ── Auto-upload base64 images ─────────────────────────────────────────────────
 async function replaceBase64WithUploads(
   content: OutputData | null,
   token: string,
 ): Promise<OutputData | null> {
   if (!content) return content;
-
   const uploadBase64 = async (dataUrl: string): Promise<string> => {
     try {
       const res = await fetch(dataUrl);
@@ -29,33 +42,26 @@ async function replaceBase64WithUploads(
       });
       if (up.ok) {
         const { url } = await up.json();
-        // Return absolute URL so the Astro frontend resolves it to the backend host
         return `${window.location.origin}${url}`;
       }
     } catch { /* fall through */ }
-    return dataUrl; // keep original if upload fails
+    return dataUrl;
   };
-
   const blocks = await Promise.all(
     content.blocks.map(async (block) => {
       if (block.type === "imageSingle") {
         const url = block.data.url as string | undefined;
-        if (url?.startsWith("data:")) {
-          const uploaded = await uploadBase64(url);
-          return { ...block, data: { ...block.data, url: uploaded } };
-        }
+        if (url?.startsWith("data:"))
+          return { ...block, data: { ...block.data, url: await uploadBase64(url) } };
       }
       if (block.type === "imageGallery") {
         type GImg = { id?: string; url: string; [k: string]: unknown };
         const images = block.data.images as GImg[] | undefined;
         if (images) {
           const processed = await Promise.all(
-            images.map(async (img) => {
-              if (img.url?.startsWith("data:")) {
-                return { ...img, url: await uploadBase64(img.url) };
-              }
-              return img;
-            }),
+            images.map(async (img) =>
+              img.url?.startsWith("data:") ? { ...img, url: await uploadBase64(img.url) } : img,
+            ),
           );
           return { ...block, data: { ...block.data, images: processed } };
         }
@@ -63,23 +69,24 @@ async function replaceBase64WithUploads(
       return block;
     }),
   );
-
   return { ...content, blocks };
 }
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type OutputData = {
   time?: number;
   blocks: { id?: string; type: string; data: Record<string, unknown> }[];
   version?: string;
 };
 
+type TagItem = { title: string; highlight: boolean };
+
 type NoteForm = {
   contentType: "note" | "work";
   slug: string;
   title: string;
   preview: string;
-  tags: string;
-  subtitleJson: string;
+  tagItems: TagItem[];
   content: OutputData | null;
   link: string;
   linkText: string;
@@ -90,12 +97,13 @@ const EMPTY_FORM: NoteForm = {
   slug: "",
   title: "",
   preview: "",
-  tags: "",
-  subtitleJson: "",
+  tagItems: [],
   content: null,
   link: "",
   linkText: "",
 };
+
+type View = "all" | "note" | "work" | "images";
 
 const TOKEN_KEY = "admin_token";
 
@@ -104,23 +112,95 @@ function slugify(s: string) {
 }
 
 function formatDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-// ── Shared primitives ─────────────────────────────────────────
-const Field: FC<{ label: string; hint?: string; children: React.ReactNode }> = ({ label, hint, children }) => (
-  <label className="flex flex-col gap-1.5">
-    <span className="text-[11px] font-medium uppercase tracking-widest text-neutral-500 select-none">
-      {label}
-      {hint && <span className="ml-1.5 normal-case tracking-normal text-neutral-700">{hint}</span>}
-    </span>
-    {children}
-  </label>
+// ── Tag chip editor ───────────────────────────────────────────────────────────
+const TagEditor: FC<{ items: TagItem[]; onChange: (items: TagItem[]) => void }> = ({ items, onChange }) => {
+  const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const commit = (raw: string) => {
+    const titles = raw.split(",").map((t) => t.trim()).filter(Boolean);
+    const fresh = titles.filter((t) => !items.some((i) => i.title === t));
+    if (fresh.length) onChange([...items, ...fresh.map((t) => ({ title: t, highlight: false }))]);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      if (input.trim()) { commit(input); setInput(""); }
+    } else if (e.key === "Backspace" && !input && items.length) {
+      onChange(items.slice(0, -1));
+    }
+  };
+
+  return (
+    <div
+      className="flex flex-wrap gap-1.5 min-h-[30px] cursor-text"
+      onClick={() => inputRef.current?.focus()}
+    >
+      {items.map((item, i) => (
+        <span
+          key={`${item.title}-${i}`}
+          className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-sm select-none"
+          style={{
+            background: item.highlight ? "var(--n-amber-bg)" : "var(--n-gray-bg)",
+            color: "var(--n-text)",
+          }}
+        >
+          <button
+            type="button"
+            title={item.highlight ? "Remove highlight" : "Highlight"}
+            onClick={() => onChange(items.map((t, j) => j === i ? { ...t, highlight: !t.highlight } : t))}
+          >
+            {item.title}
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(items.filter((_, j) => j !== i))}
+            aria-label={`Remove ${item.title}`}
+            className="opacity-40 hover:opacity-80 transition-opacity"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        ref={inputRef}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={() => { if (input.trim()) { commit(input); setInput(""); } }}
+        placeholder={items.length === 0 ? "Add a tag…" : ""}
+        className="flex-1 min-w-[8rem] bg-transparent text-sm outline-none"
+        style={{ color: "var(--n-text)", caretColor: "var(--n-text)" }}
+      />
+    </div>
+  );
+};
+
+// ── Notion-style property row ─────────────────────────────────────────────────
+const Prop: FC<{ icon: React.ReactNode; label: string; children: React.ReactNode }> = ({
+  icon, label, children,
+}) => (
+  <div className="flex items-start min-h-[34px] rounded-md transition-colors" style={{ color: "var(--n-text)" }}>
+    <div
+      className="flex items-center gap-2 w-36 shrink-0 pt-[7px] text-sm"
+      style={{ color: "var(--n-text-s)" }}
+    >
+      <span className="opacity-70">{icon}</span>
+      <span>{label}</span>
+    </div>
+    <div className="flex-1 pt-[5px]">{children}</div>
+  </div>
 );
 
-const inputBase = "w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3.5 py-2.5 text-sm text-neutral-100 placeholder:text-neutral-700 outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-700 transition-all";
+// ── Inline input (Notion property value style) ────────────────────────────────
+const propInputCls =
+  "w-full bg-transparent text-sm outline-none px-1.5 py-0.5 rounded transition-colors hover:bg-[var(--n-hover)] focus:bg-[var(--n-hover)]";
 
+// ── Main component ────────────────────────────────────────────────────────────
 export const AdminNotes: FC = () => {
   const [token, setToken] = useState("");
   const [inputToken, setInputToken] = useState("");
@@ -129,19 +209,15 @@ export const AdminNotes: FC = () => {
 
   const [notes, setNotes] = useState<NoteApiData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [view, setView] = useState<View>("all");
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<NoteForm>(EMPTY_FORM);
   const [editorKey, setEditorKey] = useState(0);
-  // Separate from form.content — only set when opening the form, never on onChange.
-  // If initialData changes while the editor is mounted, EditorJS reinitializes → white box.
   const [initialEditorData, setInitialEditorData] = useState<OutputData | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // ── Image upload ─────────────────────────────────────────────
   const [uploadedImages, setUploadedImages] = useState<{ name: string; url: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -166,9 +242,9 @@ export const AdminNotes: FC = () => {
         headers: { "x-admin-token": token },
         body: fd,
       });
-      if (res.ok) { await loadImages(); }
-      else setError("Upload failed");
-    } catch { setError("Upload failed"); }
+      if (res.ok) { await loadImages(); sileo.success({ title: "Image uploaded" }); }
+      else sileo.error({ title: "Upload failed" });
+    } catch { sileo.error({ title: "Upload failed" }); }
     finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
   };
 
@@ -178,15 +254,13 @@ export const AdminNotes: FC = () => {
   };
 
   const copyUrl = (url: string) => {
-    const full = `${window.location.origin}${url}`;
-    navigator.clipboard.writeText(full);
+    navigator.clipboard.writeText(`${window.location.origin}${url}`);
     setCopied(url);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  useEffect(() => { if (authenticated) loadImages(); }, [authenticated, loadImages]);
+  useEffect(() => { if (authenticated) { loadImages(); } }, [authenticated, loadImages]);
 
-  // Restore saved token and re-validate
   useEffect(() => {
     const saved = localStorage.getItem(TOKEN_KEY);
     if (!saved) return;
@@ -196,16 +270,14 @@ export const AdminNotes: FC = () => {
     });
   }, []);
 
-  // ── Auth ──────────────────────────────────────────────────────
   const handleLogin = async () => {
     setAuthError("");
     const t = inputToken.trim();
     if (!t) return;
     const res = await fetch("/api/admin/validate", { headers: { "x-admin-token": t } });
-    if (!res.ok) { setAuthError("Invalid or expired token"); return; }
+    if (!res.ok) { setAuthError("Invalid token"); return; }
     localStorage.setItem(TOKEN_KEY, t);
-    setToken(t);
-    setAuthenticated(true);
+    setToken(t); setAuthenticated(true);
   };
 
   const handleLogout = () => {
@@ -216,27 +288,24 @@ export const AdminNotes: FC = () => {
   const handleExpired = () => {
     localStorage.removeItem(TOKEN_KEY);
     setAuthenticated(false); setToken("");
-    setAuthError("Token expired — run `make token` to generate a new one");
+    sileo.error({ title: "Session expired — sign in again" });
   };
 
-  // ── Data ─────────────────────────────────────────────────────
   const loadNotes = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true);
     try {
       const res = await fetch("/api/notes");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setNotes(await res.json());
-    } catch (e) { setError(String(e)); }
-    finally { setLoading(false); }
+    } catch (e) {
+      sileo.error({ title: "Failed to load entries", description: String(e) });
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { if (authenticated) loadNotes(); }, [authenticated, loadNotes]);
 
-  const clearStatus = () => { setError(""); setSuccess(""); };
   const ah = () => ({ "x-admin-token": token });
 
-  // Stable callbacks for BlockForgeEditor — new function refs on each render would
-  // trigger useEditor's tool-loading useEffect, destroying and recreating EditorJS.
   const handleEditorChange = useCallback((data?: OutputData | null) => {
     setForm((f) => ({ ...f, content: data ?? null }));
   }, []);
@@ -247,7 +316,6 @@ export const AdminNotes: FC = () => {
   }, []);
 
   const openCreate = () => {
-    clearStatus();
     setEditingId(null);
     setForm(EMPTY_FORM);
     setInitialEditorData(null);
@@ -257,32 +325,44 @@ export const AdminNotes: FC = () => {
   };
 
   const openEdit = (note: NoteApiData) => {
-    clearStatus();
     setEditingId(note.id);
     const noteContent = note.content as OutputData | null;
-    setForm({ contentType: (note.contentType as "note" | "work") ?? "note", slug: note.slug, title: note.title, preview: note.preview, tags: (note.tags ?? []).join(", "), subtitleJson: note.subtitle ? JSON.stringify(note.subtitle) : "", content: noteContent, link: note.link ?? "", linkText: note.linkText ?? "" });
+    const tagItems: TagItem[] = note.subtitle?.length
+      ? note.subtitle
+      : (note.tags ?? []).map((t) => ({ title: t, highlight: false }));
+    setForm({
+      contentType: (note.contentType as "note" | "work") ?? "note",
+      slug: note.slug,
+      title: note.title,
+      preview: note.preview,
+      tagItems,
+      content: noteContent,
+      link: note.link ?? "",
+      linkText: note.linkText ?? "",
+    });
     setInitialEditorData(noteContent);
     setEditorKey((k) => k + 1);
     setShowForm(true);
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
-  // cancelForm is defined above as useCallback
-
-  // ── Save ──────────────────────────────────────────────────────
-  // contentOverride: pass explicitly when called from BlockForgeEditor's onSave
-  // (state update is async so we can't rely on form.content being current yet)
   const handleSave = async (contentOverride?: OutputData | null) => {
-    clearStatus(); setSaving(true);
-    let subtitle: SubtitleItem[] | null = null;
-    if (form.subtitleJson.trim()) {
-      try { subtitle = JSON.parse(form.subtitleJson); }
-      catch { setError("Invalid subtitle JSON"); setSaving(false); return; }
-    }
-    // Auto-upload any base64 images before saving (block-forge stores uploaded files as data URLs)
+    setSaving(true);
     const rawContent = contentOverride !== undefined ? contentOverride : form.content;
     const content = await replaceBase64WithUploads(rawContent, token);
-    const payload = { contentType: form.contentType, slug: form.slug, title: form.title, preview: form.preview, tags: form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [], subtitle, content: content ?? undefined, link: form.link || null, linkText: form.linkText || null };
+    const tags = form.tagItems.map((i) => i.title);
+    const subtitle: SubtitleItem[] | null = form.tagItems.length ? form.tagItems : null;
+    const payload = {
+      contentType: form.contentType,
+      slug: form.slug,
+      title: form.title,
+      preview: form.preview,
+      tags,
+      subtitle,
+      content: content ?? undefined,
+      link: form.link || null,
+      linkText: form.linkText || null,
+    };
     const isEdit = editingId !== null;
     try {
       const res = await fetch(isEdit ? `/api/notes/${editingId}` : "/api/notes", {
@@ -293,79 +373,78 @@ export const AdminNotes: FC = () => {
       if (res.status === 401) { handleExpired(); return; }
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
-        setError(Array.isArray(b.message) ? b.message.join(", ") : b.message ?? b.error ?? `HTTP ${res.status}`);
+        sileo.error({ title: Array.isArray(b.message) ? b.message.join(", ") : b.message ?? b.error ?? `HTTP ${res.status}` });
         return;
       }
-      setSuccess(isEdit ? "Note updated" : "Note created");
+      sileo.success({ title: isEdit ? `${form.contentType} updated` : `${form.contentType} created` });
       setShowForm(false); setForm(EMPTY_FORM); loadNotes();
     } finally { setSaving(false); }
   };
 
-  // ── Delete ────────────────────────────────────────────────────
   const handleDelete = async (note: NoteApiData) => {
     if (!confirm(`Delete "${note.title}"?`)) return;
-    clearStatus();
     const res = await fetch(`/api/notes/${note.id}`, { method: "DELETE", headers: { ...ah() } });
     if (res.status === 401) { handleExpired(); return; }
     if (res.status !== 204 && !res.ok) {
       const b = await res.json().catch(() => ({}));
-      setError(b.message ?? b.error ?? `HTTP ${res.status}`);
+      sileo.error({ title: b.message ?? b.error ?? `HTTP ${res.status}` });
       return;
     }
-    setSuccess("Note deleted");
+    sileo.success({ title: "Entry deleted" });
     loadNotes();
   };
 
-  // ── Render: login ─────────────────────────────────────────────
+  // ── Login ─────────────────────────────────────────────────────────────────
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center -mt-12">
-        <div className="w-full max-w-sm space-y-8">
-          {/* Logo mark */}
-          <div className="space-y-1">
-            <div className="text-xs font-mono text-neutral-600 mb-4">sskd / admin</div>
-            <h1 className="text-xl font-semibold tracking-tight text-neutral-100">Sign in</h1>
-            <p className="text-sm text-neutral-500">
-              Generate a time-limited token on the server:
-            </p>
-          </div>
-
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 space-y-2">
-            <div className="flex items-center gap-2 text-neutral-600 text-[11px] font-mono uppercase tracking-widest">
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700 inline-block" />
-              terminal
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ background: "var(--n-sidebar)" }}
+      >
+        <div
+          className="w-full max-w-[360px] rounded-xl border p-8 shadow-sm bg-white"
+          style={{ borderColor: "var(--n-border)" }}
+        >
+          <div className="mb-7 flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#37352f] text-sm font-bold text-white select-none">
+              S
             </div>
-            <pre className="text-sm font-mono text-emerald-400 select-all">
-              make token
-            </pre>
-            <p className="text-xs text-neutral-600 pt-1">
-              Default 24 h &nbsp;·&nbsp; Override:{" "}
-              <code className="font-mono text-neutral-500">HOURS=48 make token</code>
-            </p>
+            <div>
+              <p className="text-base font-semibold" style={{ color: "var(--n-text)" }}>sskd / admin</p>
+              <p className="text-xs" style={{ color: "var(--n-text-m)" }}>Sign in to continue</p>
+            </div>
           </div>
 
           <div className="space-y-3">
             <input
               type="password"
-              placeholder="Paste token"
+              placeholder="Paste your token…"
               value={inputToken}
               onChange={(e) => setInputToken(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              className={inputBase}
               autoFocus
+              className="w-full rounded-md border px-3.5 py-2.5 text-sm outline-none transition"
+              style={{
+                borderColor: "var(--n-border-m)",
+                color: "var(--n-text)",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#37352f")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--n-border-m)")}
             />
             {authError && (
-              <div className="flex items-start gap-2 text-red-400 text-xs bg-red-950/40 border border-red-900/50 rounded-lg px-3.5 py-2.5">
-                <span className="mt-0.5">⚠</span>
-                {authError}
-              </div>
+              <p className="text-xs text-red-500">{authError}</p>
             )}
             <button
               onClick={handleLogin}
               disabled={!inputToken.trim()}
-              className="w-full bg-white hover:bg-neutral-100 disabled:opacity-30 text-neutral-950 text-sm font-medium py-2.5 rounded-lg transition-colors"
+              className="w-full rounded-md py-2.5 text-sm font-medium transition"
+              style={{ background: "#37352f", color: "#fff" }}
+              onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "#000"; }}
+              onMouseLeave={(e) => (e.currentTarget.style.background = e.currentTarget.disabled ? "rgba(55,53,47,0.12)" : "#37352f")}
+              onMouseDown={(e) => e.currentTarget.disabled && e.preventDefault()}
+              {...(!inputToken.trim() && { style: { background: "rgba(55,53,47,0.12)", color: "rgba(55,53,47,0.4)", cursor: "not-allowed" } })}
             >
-              Continue
+              Continue →
             </button>
           </div>
         </div>
@@ -373,318 +452,503 @@ export const AdminNotes: FC = () => {
     );
   }
 
-  // ── Render: panel ─────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const visibleNotes =
+    view === "all" ? notes :
+    view === "note" ? notes.filter((n) => n.contentType === "note") :
+    view === "work" ? notes.filter((n) => n.contentType === "work") :
+    [];
+
+  const notesCount = notes.filter((n) => n.contentType === "note").length;
+  const workCount = notes.filter((n) => n.contentType === "work").length;
+
+  // ── Sidebar nav item ──────────────────────────────────────────────────────
+  const NavItem: FC<{
+    icon: React.ReactNode;
+    label: string;
+    count?: number;
+    active: boolean;
+    onClick: () => void;
+  }> = ({ icon, label, count, active, onClick }) => (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors text-left"
+      style={{
+        background: active ? "var(--n-active)" : "transparent",
+        color: active ? "var(--n-text)" : "var(--n-text-s)",
+      }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--n-hover)"; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+    >
+      <span className="opacity-60 shrink-0">{icon}</span>
+      <span className="flex-1 truncate">{label}</span>
+      {count !== undefined && (
+        <span className="text-xs shrink-0" style={{ color: "var(--n-text-m)" }}>{count}</span>
+      )}
+    </button>
+  );
+
+  // ── Full layout ───────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-[11px] font-mono text-neutral-600 mb-1">sskd / admin</div>
-          <h1 className="text-lg font-semibold tracking-tight text-neutral-100">Notes</h1>
+    <div className="flex h-screen overflow-hidden select-none" style={{ color: "var(--n-text)" }}>
+
+      {/* ── Sidebar ── */}
+      <aside
+        className="flex w-60 shrink-0 flex-col border-r"
+        style={{ background: "var(--n-sidebar)", borderColor: "var(--n-border)" }}
+      >
+        {/* Workspace header */}
+        <div className="px-4 pt-5 pb-3">
+          <div className="flex items-center gap-2.5 rounded-md px-2 py-2">
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#37352f] text-[10px] font-bold" style={{ color: "#fff" }}>
+              S
+            </div>
+            <span className="truncate text-sm font-semibold" style={{ color: "var(--n-text)" }}>
+              sskd
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {!showForm && (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-medium px-3.5 py-2 rounded-lg transition-colors"
-            >
-              <span className="text-neutral-400">+</span> New note
-            </button>
-          )}
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5">
+          <NavItem
+            icon={<LayoutList className="w-4 h-4" />}
+            label="All entries"
+            count={notes.length}
+            active={!showForm && view === "all"}
+            onClick={() => { setView("all"); cancelForm(); }}
+          />
+          <NavItem
+            icon={<FileText className="w-4 h-4" />}
+            label="Notes"
+            count={notesCount}
+            active={!showForm && view === "note"}
+            onClick={() => { setView("note"); cancelForm(); }}
+          />
+          <NavItem
+            icon={<Briefcase className="w-4 h-4" />}
+            label="Work"
+            count={workCount}
+            active={!showForm && view === "work"}
+            onClick={() => { setView("work"); cancelForm(); }}
+          />
+
+          <div className="my-2 border-t" style={{ borderColor: "var(--n-border)" }} />
+
+          <NavItem
+            icon={<ImageIcon className="w-4 h-4" />}
+            label="Images"
+            count={uploadedImages.length}
+            active={!showForm && view === "images"}
+            onClick={() => { setView("images"); cancelForm(); }}
+          />
+        </nav>
+
+        {/* Sign out */}
+        <div className="border-t px-3 py-4" style={{ borderColor: "var(--n-border)" }}>
           <button
             onClick={handleLogout}
-            className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors px-2"
+            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors"
+            style={{ color: "var(--n-text-s)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
+            <LogOut className="w-4 h-4 opacity-60" />
             Sign out
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* Status messages */}
-      {error && (
-        <div className="flex items-start gap-2.5 text-red-400 text-xs bg-red-950/40 border border-red-900/50 rounded-lg px-4 py-3">
-          <span className="mt-0.5 shrink-0">⚠</span>
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2.5 text-emerald-400 text-xs bg-emerald-950/40 border border-emerald-900/50 rounded-lg px-4 py-3">
-          <span>✓</span>
-          {success}
-        </div>
-      )}
+      {/* ── Main content ── */}
+      <main className="flex flex-1 min-w-0 flex-col overflow-y-auto bg-white">
 
-      {/* ── Image library ── */}
-      {!showForm && (
-        <details className="group">
-          <summary className="cursor-pointer text-xs text-neutral-600 hover:text-neutral-400 flex items-center gap-2 py-1 select-none">
-            <span className="transition-transform group-open:rotate-90 inline-block">›</span>
-            Image library ({uploadedImages.length})
-          </summary>
-          <div className="mt-3 space-y-3">
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleUpload}
-                className="hidden"
-                id="img-upload"
-              />
-              <label
-                htmlFor="img-upload"
-                className="cursor-pointer text-xs bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 px-3.5 py-2 rounded-lg transition-colors"
-              >
-                {uploading ? "Uploading…" : "↑ Upload image"}
-              </label>
-              <span className="text-xs text-neutral-700">JPG, PNG, WebP, SVG · max 10 MB</span>
-            </div>
-            {uploadedImages.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 gap-2">
-                {uploadedImages.map((img) => (
-                  <div key={img.name} className="group/img relative rounded-lg overflow-hidden bg-neutral-900 border border-neutral-800 aspect-square">
-                    <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-1">
-                      <button
-                        onClick={() => copyUrl(img.url)}
-                        className="text-[10px] bg-white text-neutral-900 rounded px-2 py-0.5 font-medium w-full"
-                      >
-                        {copied === img.url ? "Copied!" : "Copy URL"}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteImage(img.name)}
-                        className="text-[10px] text-red-400 hover:text-red-300"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </details>
-      )}
+        {/* ── Form view ── */}
+        {showForm && (
+          <div className="mx-auto w-full max-w-3xl px-16 py-10 select-text">
 
-      {/* ── Form ── */}
-      {showForm && (
-        <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
-          {/* Form header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
-            <h2 className="text-sm font-medium text-neutral-200">
-              {editingId ? "Edit note" : "New note"}
-            </h2>
-            <button onClick={cancelForm} className="text-neutral-600 hover:text-neutral-300 text-lg leading-none transition-colors" aria-label="Close">
-              ×
+            {/* Back */}
+            <button
+              onClick={cancelForm}
+              className="mb-6 flex items-center gap-1.5 text-sm transition-colors"
+              style={{ color: "var(--n-text-s)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--n-text)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--n-text-s)")}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to entries
             </button>
-          </div>
 
-          <div className="p-6 space-y-5">
-            {/* Type selector */}
-            <div className="flex gap-2">
-              {(["note", "work"] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, contentType: t }))}
-                  className={`text-xs px-4 py-1.5 rounded-lg border transition-colors ${
-                    form.contentType === t
-                      ? "bg-neutral-200 text-neutral-900 border-neutral-200 font-medium"
-                      : "border-neutral-700 text-neutral-500 hover:text-neutral-300"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+            {/* Page title area */}
+            <div className="mb-8">
+              <input
+                value={form.title}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    title: e.target.value,
+                    slug: editingId ? f.slug : slugify(e.target.value),
+                  }))
+                }
+                placeholder="Untitled"
+                className="w-full bg-transparent text-[36px] font-bold leading-tight outline-none"
+                style={{ color: "var(--n-text)", caretColor: "var(--n-text)" }}
+              />
             </div>
 
-            {/* Title + Slug */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Title" hint="*">
-                <input
-                  value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value, slug: editingId ? f.slug : slugify(e.target.value) }))}
-                  placeholder="My awesome note"
-                  className={inputBase}
-                />
-              </Field>
-              <Field label="Slug" hint="*">
+            {/* Properties */}
+            <div
+              className="rounded-lg border p-1 mb-8 space-y-0.5"
+              style={{ borderColor: "var(--n-border)" }}
+            >
+              {/* Type */}
+              <Prop icon={<FileText className="w-3.5 h-3.5" />} label="Type">
+                <div className="flex gap-1 pt-1">
+                  {(["note", "work"] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setForm((f) => ({ ...f, contentType: t }))}
+                      className="rounded px-2.5 py-0.5 text-sm transition-colors"
+                      style={{
+                        background: form.contentType === t
+                          ? (t === "work" ? "var(--n-blue-bg)" : "var(--n-gray-bg)")
+                          : "transparent",
+                        color: form.contentType === t
+                          ? (t === "work" ? "var(--n-blue-text)" : "var(--n-text)")
+                          : "var(--n-text-m)",
+                        fontWeight: form.contentType === t ? 500 : 400,
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </Prop>
+
+              {/* Slug */}
+              <Prop icon={<span className="font-mono text-xs">/</span>} label="Slug">
                 <input
                   value={form.slug}
                   onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                  placeholder="my-awesome-note"
-                  className={`${inputBase} font-mono text-xs`}
+                  placeholder="my-entry-slug"
+                  className={`${propInputCls} font-mono text-xs`}
+                  style={{ color: "var(--n-text)" }}
                 />
-              </Field>
+              </Prop>
+
+              {/* Preview */}
+              <Prop icon={<span className="text-xs">≡</span>} label="Preview">
+                <textarea
+                  value={form.preview}
+                  onChange={(e) => setForm((f) => ({ ...f, preview: e.target.value }))}
+                  placeholder="Short description…"
+                  rows={2}
+                  className={`${propInputCls} resize-none leading-relaxed`}
+                  style={{ color: "var(--n-text)" }}
+                />
+              </Prop>
+
+              {/* Tags */}
+              <Prop icon={<span className="text-xs">#</span>} label="Tags">
+                <div className="px-1.5 py-0.5">
+                  <TagEditor
+                    items={form.tagItems}
+                    onChange={(tagItems) => setForm((f) => ({ ...f, tagItems }))}
+                  />
+                </div>
+              </Prop>
+
+              {/* Work-only fields */}
+              {form.contentType === "work" && (
+                <>
+                  <Prop icon={<span className="text-xs">↗</span>} label="Link URL">
+                    <input
+                      value={form.link}
+                      onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
+                      placeholder="https://…"
+                      className={propInputCls}
+                      style={{ color: "var(--n-text)" }}
+                    />
+                  </Prop>
+                  <Prop icon={<span className="text-xs">T</span>} label="Link text">
+                    <input
+                      value={form.linkText}
+                      onChange={(e) => setForm((f) => ({ ...f, linkText: e.target.value }))}
+                      placeholder="view project >"
+                      className={propInputCls}
+                      style={{ color: "var(--n-text)" }}
+                    />
+                  </Prop>
+                </>
+              )}
             </div>
 
-            {/* Preview */}
-            <Field label="Preview">
-              <textarea
-                value={form.preview}
-                onChange={(e) => setForm((f) => ({ ...f, preview: e.target.value }))}
-                rows={2}
-                placeholder="Short description shown in the notes list"
-                className={`${inputBase} resize-none`}
-              />
-            </Field>
-
-            {/* Tags + Subtitle */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Tags">
-                <input
-                  value={form.tags}
-                  onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                  placeholder="react, typescript, tips"
-                  className={inputBase}
-                />
-              </Field>
-              <Field label="Subtitle JSON" hint="optional">
-                <input
-                  value={form.subtitleJson}
-                  onChange={(e) => setForm((f) => ({ ...f, subtitleJson: e.target.value }))}
-                  placeholder='[{"title":"x","highlight":true}]'
-                  className={`${inputBase} font-mono text-xs`}
-                />
-              </Field>
-            </div>
-
-            {/* Work-only: link fields */}
-            {form.contentType === "work" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Link URL">
-                  <input
-                    value={form.link}
-                    onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
-                    placeholder="https://github.com/you/project"
-                    className={inputBase}
-                  />
-                </Field>
-                <Field label="Link text">
-                  <input
-                    value={form.linkText}
-                    onChange={(e) => setForm((f) => ({ ...f, linkText: e.target.value }))}
-                    placeholder="view project >"
-                    className={inputBase}
-                  />
-                </Field>
-              </div>
-            )}
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 text-neutral-800">
-              <div className="flex-1 border-t border-neutral-800" />
-              <span className="text-[10px] uppercase tracking-widest text-neutral-700 font-mono">content</span>
-              <div className="flex-1 border-t border-neutral-800" />
+            {/* Content divider */}
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex-1 border-t" style={{ borderColor: "var(--n-border)" }} />
+              <span className="text-xs font-medium uppercase tracking-widest" style={{ color: "var(--n-text-m)" }}>
+                Content
+              </span>
+              <div className="flex-1 border-t" style={{ borderColor: "var(--n-border)" }} />
             </div>
 
             {/* Editor */}
-            <div className="rounded-xl overflow-hidden border border-neutral-700/60 bg-white text-neutral-900">
+            <div className="rounded-lg border overflow-hidden mb-8" style={{ borderColor: "var(--n-border)" }}>
               <BlockForgeEditor
                 key={editorKey}
                 id={`editor-${editorKey}`}
                 enabledTools={EDITOR_TOOLS}
+                tools={EDITOR_INLINE_TOOLS}
                 initialData={initialEditorData ?? undefined}
                 onChange={handleEditorChange}
-                onSave={(data) => {
-                  handleEditorChange(data);
-                  handleSave(data ?? null);
-                }}
+                onSave={(data) => { handleEditorChange(data); handleSave(data ?? null); }}
                 onCancel={cancelForm}
               />
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 pt-1">
+            <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: "var(--n-border)" }}>
               <button
                 onClick={() => handleSave()}
                 disabled={saving || !form.title || !form.slug}
-                className="bg-white hover:bg-neutral-100 disabled:opacity-30 text-neutral-950 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+                className="rounded-md px-4 py-2 text-sm font-medium transition"
+                style={
+                  saving || !form.title || !form.slug
+                    ? { background: "rgba(55,53,47,0.12)", color: "rgba(55,53,47,0.4)", cursor: "not-allowed" }
+                    : { background: "#37352f", color: "#fff" }
+                }
+                onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "#000"; }}
+                onMouseLeave={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "#37352f"; }}
               >
-                {saving ? "Saving…" : editingId ? "Update note" : "Create note"}
+                {saving ? "Saving…" : editingId ? `Update ${form.contentType}` : `Publish ${form.contentType}`}
               </button>
               <button
                 onClick={cancelForm}
-                className="text-neutral-500 hover:text-neutral-300 text-sm px-4 py-2.5 rounded-lg hover:bg-neutral-800 transition-colors"
+                className="rounded-md px-4 py-2 text-sm transition-colors"
+                style={{ color: "var(--n-text-s)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
-                Cancel
+                Discard
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── List ── */}
-      {loading && (
-        <div className="py-16 text-center">
-          <div className="inline-block w-4 h-4 border-2 border-neutral-700 border-t-neutral-400 rounded-full animate-spin" />
-        </div>
-      )}
-
-      {!loading && !showForm && (
-        <div>
-          {notes.length === 0 ? (
-            <div className="py-20 text-center space-y-2">
-              <p className="text-neutral-600 text-sm">No notes yet</p>
-              <button onClick={openCreate} className="text-xs text-neutral-500 hover:text-neutral-300 underline underline-offset-4 transition-colors">
-                Create your first note →
-              </button>
+        {/* ── List / Images view ── */}
+        {!showForm && (
+          <>
+            {/* Page header */}
+            <div className="flex items-center justify-between border-b px-8 py-5" style={{ borderColor: "var(--n-border)" }}>
+              <div>
+                <h1 className="text-xl font-bold" style={{ color: "var(--n-text)" }}>
+                  {view === "all" ? "All entries" :
+                   view === "note" ? "Notes" :
+                   view === "work" ? "Work" :
+                   "Image library"}
+                </h1>
+                {view !== "images" && (
+                  <p className="mt-0.5 text-sm" style={{ color: "var(--n-text-m)" }}>
+                    {loading ? "Loading…" : `${visibleNotes.length} ${visibleNotes.length === 1 ? "entry" : "entries"}`}
+                  </p>
+                )}
+              </div>
+              {view !== "images" && (
+                <button
+                  onClick={openCreate}
+                  className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+                  style={{
+                    borderColor: "var(--n-border-m)",
+                    color: "var(--n-text)",
+                    background: "white",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                >
+                  <Plus className="w-4 h-4" style={{ color: "var(--n-text-s)" }} />
+                  New entry
+                </button>
+              )}
             </div>
-          ) : (
-            <div className="divide-y divide-neutral-800/60">
-              {notes.map((note) => (
-                <div key={note.id} className="group flex items-center gap-4 py-4 first:pt-0 last:pb-0">
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <p className="text-sm font-medium text-neutral-100 truncate">{note.title}</p>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${note.contentType === "work" ? "bg-blue-900/40 text-blue-400" : "bg-neutral-800 text-neutral-500"}`}>
-                          {note.contentType ?? "note"}
-                        </span>
-                        <span className="text-xs font-mono text-neutral-600 truncate">/{note.contentType === "work" ? "work" : "notes"}/{note.slug}</span>
-                      </div>
-                      {note.tags && note.tags.length > 0 && (
-                        <>
-                          <span className="text-neutral-800 text-xs">·</span>
-                          <div className="flex gap-1.5 flex-wrap">
-                            {note.tags.slice(0, 3).map((tag) => (
-                              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-500 font-mono">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </>
-                      )}
+
+            {/* ── Entries list ── */}
+            {view !== "images" && (
+              <>
+                {loading ? (
+                  <div className="flex items-center justify-center py-24">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[rgba(55,53,47,0.15)] border-t-[rgba(55,53,47,0.5)]" />
+                  </div>
+                ) : visibleNotes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-24 text-center px-8">
+                    <p className="text-base font-medium mb-1" style={{ color: "var(--n-text-s)" }}>No entries here yet</p>
+                    <p className="text-sm mb-6" style={{ color: "var(--n-text-m)" }}>
+                      Create your first entry to get started
+                    </p>
+                    <button
+                      onClick={openCreate}
+                      className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+                      style={{ borderColor: "var(--n-border-m)", color: "var(--n-text)", background: "white" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                    >
+                      <Plus className="w-4 h-4" style={{ color: "var(--n-text-s)" }} />
+                      New entry
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Column headers */}
+                    <div
+                      className="grid grid-cols-[1fr_88px_116px_40px] gap-6 px-8 py-2.5 border-b text-xs font-semibold uppercase tracking-wide"
+                      style={{ borderColor: "var(--n-border)", color: "var(--n-text-m)" }}
+                    >
+                      <span>Title</span>
+                      <span>Type</span>
+                      <span>Date</span>
+                      <span />
                     </div>
-                  </div>
 
-                  {/* Date */}
-                  <span className="text-xs text-neutral-700 tabular-nums shrink-0 hidden sm:block">
-                    {formatDate(note.createdAt)}
+                    {visibleNotes.map((note) => (
+                      <div
+                        key={note.id}
+                        className="group grid grid-cols-[1fr_88px_116px_40px] gap-6 items-center px-8 py-4 border-b transition-colors cursor-pointer"
+                        style={{ borderColor: "var(--n-border)" }}
+                        onClick={() => openEdit(note)}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        {/* Title cell */}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate" style={{ color: "var(--n-text)" }}>
+                            {note.title}
+                          </p>
+                          <p className="mt-0.5 truncate font-mono text-xs" style={{ color: "var(--n-text-m)" }}>
+                            /{note.contentType === "work" ? "work" : "notes"}/{note.slug}
+                          </p>
+                          {note.tags && note.tags.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {note.tags.slice(0, 4).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="rounded px-1.5 py-0.5 text-xs"
+                                  style={{ background: "var(--n-gray-bg)", color: "var(--n-text-s)" }}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Type badge */}
+                        <div>
+                          <span
+                            className="rounded px-2 py-1 text-xs font-medium"
+                            style={
+                              note.contentType === "work"
+                                ? { background: "var(--n-blue-bg)", color: "var(--n-blue-text)" }
+                                : { background: "var(--n-gray-bg)", color: "var(--n-text-s)" }
+                            }
+                          >
+                            {note.contentType ?? "note"}
+                          </span>
+                        </div>
+
+                        {/* Date */}
+                        <div className="text-sm" style={{ color: "var(--n-text-m)" }}>
+                          {formatDate(note.createdAt)}
+                        </div>
+
+                        {/* Delete — appears on row hover */}
+                        <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(note); }}
+                            className="rounded p-1.5 transition-colors"
+                            title="Delete"
+                            style={{ color: "var(--n-text-m)" }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(235,87,87,0.08)";
+                              e.currentTarget.style.color = "#eb5757";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.color = "var(--n-text-m)";
+                            }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ── Image library ── */}
+            {view === "images" && (
+              <div className="px-8 py-6 space-y-5">
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUpload}
+                    className="hidden"
+                    id="img-upload"
+                  />
+                  <label
+                    htmlFor="img-upload"
+                    className="flex cursor-pointer items-center gap-2 rounded-md border px-3.5 py-2 text-sm font-medium transition-colors"
+                    style={{
+                      borderColor: "var(--n-border-m)",
+                      color: "var(--n-text-s)",
+                      background: "white",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                  >
+                    <Plus className="w-4 h-4" />
+                    {uploading ? "Uploading…" : "Upload image"}
+                  </label>
+                  <span className="text-xs" style={{ color: "var(--n-text-m)" }}>
+                    JPG, PNG, WebP, SVG · max 10 MB
                   </span>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-4 shrink-0">
-                    <button
-                      onClick={() => openEdit(note)}
-                      className="text-xs text-neutral-500 hover:text-white px-3 py-1.5 rounded-lg hover:bg-neutral-800 transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(note)}
-                      className="text-xs text-neutral-500 hover:text-red-400 px-3 py-1.5 rounded-lg hover:bg-neutral-800/80 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+
+                {uploadedImages.length === 0 ? (
+                  <p className="text-sm" style={{ color: "var(--n-text-m)" }}>No images uploaded yet.</p>
+                ) : (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                    {uploadedImages.map((img) => (
+                      <div
+                        key={img.name}
+                        className="group/img relative aspect-square overflow-hidden rounded-lg border"
+                        style={{ borderColor: "var(--n-border)" }}
+                      >
+                        <img src={img.url} alt={img.name} className="h-full w-full object-cover" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/60 p-1.5 opacity-0 transition-opacity group-hover/img:opacity-100">
+                          <button
+                            onClick={() => copyUrl(img.url)}
+                            className="w-full rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-gray-900 transition-colors hover:bg-gray-100"
+                          >
+                            {copied === img.url ? "Copied!" : "Copy URL"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteImage(img.name)}
+                            className="text-[10px] text-red-300 hover:text-red-200 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </main>
     </div>
   );
 };

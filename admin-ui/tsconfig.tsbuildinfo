@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/admin-notes.tsx","./src/main.tsx","./src/types.ts"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/admin-notes.tsx","./src/main.tsx","./src/types.ts","./src/vendor.d.ts"],"version":"5.9.3"}
