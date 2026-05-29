@@ -1,28 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { randomBytes } from 'crypto';
 
-const TOKEN_FILE = path.join(process.cwd(), '.admin-token');
-
-interface StoredToken {
+interface ActiveToken {
   token: string;
-  expiresAt: number; // ms since epoch
+  expiresAt: number;
 }
 
 @Injectable()
 export class AdminAuthService {
-  /**
-   * Validates the token against the on-disk .admin-token file.
-   * The file is re-read on every call so tokens generated after startup work.
-   */
+  private active: ActiveToken | null = null;
+
+  generate(hours = 24): { token: string; expiresAt: string } {
+    const token = randomBytes(16).toString('hex');
+    this.active = { token, expiresAt: Date.now() + hours * 3_600_000 };
+    return { token, expiresAt: new Date(this.active.expiresAt).toISOString() };
+  }
+
   isValidToken(token: string): boolean {
-    if (!token) return false;
-    try {
-      const raw = fs.readFileSync(TOKEN_FILE, 'utf-8').trim();
-      const stored: StoredToken = JSON.parse(raw);
-      return stored.token === token && Date.now() < stored.expiresAt;
-    } catch {
-      return false;
-    }
+    if (!this.active) return false;
+    return token === this.active.token && Date.now() < this.active.expiresAt;
   }
 }

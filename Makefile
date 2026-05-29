@@ -4,7 +4,7 @@ export
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-admin build build-admin db-up db-down db-logs dev start lint test token seed up
+.PHONY: help install install-admin build build-admin db-up db-down db-logs dev start lint test seed up
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -42,20 +42,6 @@ lint: ## Lint and auto-fix
 
 test: ## Run unit tests
 	npm run test
-
-token: ## Generate a time-limited admin token (default 24h, override: HOURS=48 make token)
-	@node -e "\
-	  const c = require('crypto'); \
-	  const h = parseInt(process.env.HOURS || '24', 10); \
-	  const t = c.randomBytes(16).toString('hex'); \
-	  const exp = Date.now() + h * 3600 * 1000; \
-	  require('fs').writeFileSync('.admin-token', JSON.stringify({token:t,expiresAt:exp})); \
-	  console.log(''); \
-	  console.log('  Token : ' + t); \
-	  console.log('  Expiry: ' + new Date(exp).toLocaleString() + ' (' + h + 'h)'); \
-	  console.log(''); \
-	  console.log('  Open /admin in the browser and paste the token.'); \
-	  console.log('');"
 
 seed: ## Seed the effector note (needs token, usage: TOKEN=xxx make seed)
 	@echo "Seeding effector note..."

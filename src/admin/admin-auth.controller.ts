@@ -1,13 +1,30 @@
-import { Controller, Get, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { LocalhostGuard } from '../common/guards/localhost.guard';
 import { AdminTokenGuard } from '../common/guards/admin-token.guard';
+import { AdminAuthService } from './admin-auth.service';
 
 @Controller('admin')
 export class AdminAuthController {
-  /**
-   * GET /admin/validate
-   * Lightweight endpoint to check whether the current token is valid.
-   * Protected by AdminTokenGuard — returns 200 if valid, 401 if not.
-   */
+  constructor(private readonly adminAuthService: AdminAuthService) {}
+
+  @Post('token')
+  @UseGuards(LocalhostGuard)
+  @HttpCode(HttpStatus.OK)
+  generate(@Query('hours') hours?: string): {
+    token: string;
+    expiresAt: string;
+  } {
+    return this.adminAuthService.generate(parseInt(hours ?? '24', 10));
+  }
+
   @Get('validate')
   @UseGuards(AdminTokenGuard)
   @HttpCode(HttpStatus.OK)
