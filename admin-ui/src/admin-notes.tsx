@@ -136,69 +136,53 @@ const TagEditor: FC<{ items: TagItem[]; onChange: (items: TagItem[]) => void }> 
   };
 
   return (
-    <div
-      className="flex flex-wrap gap-1.5 min-h-[30px] cursor-text"
-      onClick={() => inputRef.current?.focus()}
-    >
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
       {items.map((item, i) => (
         <span
           key={`${item.title}-${i}`}
-          className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-sm select-none"
+          className="adm-tag"
           style={{
-            background: item.highlight ? "var(--n-amber-bg)" : "var(--n-gray-bg)",
-            color: "var(--n-text)",
+            background: item.highlight ? "var(--tag-amber-bg)" : "var(--tag-gray-bg)",
+            color: item.highlight ? "var(--tag-amber-tx)" : "var(--tag-gray-tx)",
+            borderColor: item.highlight ? "var(--tag-amber-bd)" : "var(--tag-gray-bd)",
           }}
         >
           <button
             type="button"
             title={item.highlight ? "Remove highlight" : "Highlight"}
+            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}
             onClick={() => onChange(items.map((t, j) => j === i ? { ...t, highlight: !t.highlight } : t))}
           >
             {item.title}
           </button>
           <button
             type="button"
+            className="adm-tag-x"
             onClick={() => onChange(items.filter((_, j) => j !== i))}
             aria-label={`Remove ${item.title}`}
-            className="opacity-40 hover:opacity-80 transition-opacity"
           >
-            <X className="w-3 h-3" />
+            <X style={{ width: 9, height: 9 }} />
           </button>
         </span>
       ))}
-      <input
-        ref={inputRef}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={onKeyDown}
-        onBlur={() => { if (input.trim()) { commit(input); setInput(""); } }}
-        placeholder={items.length === 0 ? "Add a tag…" : ""}
-        className="flex-1 min-w-[8rem] bg-transparent text-sm outline-none"
-        style={{ color: "var(--n-text)", caretColor: "var(--n-text)" }}
-      />
+      <span
+        className="adm-tag-add"
+        onClick={() => inputRef.current?.focus()}
+      >
+        <Plus style={{ width: 11, height: 11 }} />
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          onBlur={() => { if (input.trim()) { commit(input); setInput(""); } }}
+          placeholder="add tag"
+          className="adm-tag-input-inline"
+        />
+      </span>
     </div>
   );
 };
-
-// ── Notion-style property row ─────────────────────────────────────────────────
-const Prop: FC<{ icon: React.ReactNode; label: string; children: React.ReactNode }> = ({
-  icon, label, children,
-}) => (
-  <div className="flex items-start min-h-[34px] rounded-md transition-colors" style={{ color: "var(--n-text)" }}>
-    <div
-      className="flex items-center gap-2 w-36 shrink-0 pt-[7px] text-sm"
-      style={{ color: "var(--n-text-s)" }}
-    >
-      <span className="opacity-70">{icon}</span>
-      <span>{label}</span>
-    </div>
-    <div className="flex-1 pt-[5px]">{children}</div>
-  </div>
-);
-
-// ── Inline input (Notion property value style) ────────────────────────────────
-const propInputCls =
-  "w-full bg-transparent text-sm outline-none px-1.5 py-0.5 rounded transition-colors hover:bg-[var(--n-hover)] focus:bg-[var(--n-hover)]";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export const AdminNotes: FC = () => {
@@ -397,56 +381,47 @@ export const AdminNotes: FC = () => {
   // ── Login ─────────────────────────────────────────────────────────────────
   if (!authenticated) {
     return (
-      <div
-        className="flex min-h-screen items-center justify-center"
-        style={{ background: "var(--n-sidebar)" }}
-      >
-        <div
-          className="w-full max-w-[360px] rounded-xl border p-8 shadow-sm bg-white"
-          style={{ borderColor: "var(--n-border)" }}
-        >
-          <div className="mb-7 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#37352f] text-sm font-bold text-white select-none">
-              S
+      <div className="adm-login-stage">
+        <div className="adm-login-card">
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <div
+              className="adm-brand-mark"
+              style={{ width: 38, height: 38, borderRadius: 9, fontSize: 17 }}
+            >
+              s
             </div>
             <div>
-              <p className="text-base font-semibold" style={{ color: "var(--n-text)" }}>sskd / admin</p>
-              <p className="text-xs" style={{ color: "var(--n-text-m)" }}>Sign in to continue</p>
+              <p style={{ fontWeight: 600, fontSize: 15, letterSpacing: "-0.01em", color: "var(--text)" }}>
+                <b>sskd</b>
+                <span style={{ color: "var(--text-ghost)", margin: "0 5px", fontWeight: 400 }}>/</span>
+                <b>admin</b>
+              </p>
+              <p style={{ fontSize: 12.5, color: "var(--text-faint)", marginTop: 2 }}>Sign in to continue</p>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <input
-              type="password"
-              placeholder="Paste your token…"
-              value={inputToken}
-              onChange={(e) => setInputToken(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              autoFocus
-              className="w-full rounded-md border px-3.5 py-2.5 text-sm outline-none transition"
-              style={{
-                borderColor: "var(--n-border-m)",
-                color: "var(--n-text)",
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "#37352f")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--n-border-m)")}
-            />
-            {authError && (
-              <p className="text-xs text-red-500">{authError}</p>
-            )}
-            <button
-              onClick={handleLogin}
-              disabled={!inputToken.trim()}
-              className="w-full rounded-md py-2.5 text-sm font-medium transition"
-              style={{ background: "#37352f", color: "#fff" }}
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "#000"; }}
-              onMouseLeave={(e) => (e.currentTarget.style.background = e.currentTarget.disabled ? "rgba(55,53,47,0.12)" : "#37352f")}
-              onMouseDown={(e) => e.currentTarget.disabled && e.preventDefault()}
-              {...(!inputToken.trim() && { style: { background: "rgba(55,53,47,0.12)", color: "rgba(55,53,47,0.4)", cursor: "not-allowed" } })}
-            >
-              Continue →
-            </button>
-          </div>
+          <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, marginBottom: 7, display: "block" }}>
+            Access token
+          </label>
+          <input
+            type="password"
+            placeholder="Paste your token…"
+            value={inputToken}
+            onChange={(e) => setInputToken(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            autoFocus
+            className="adm-token-input"
+          />
+          {authError && (
+            <p style={{ fontSize: 12, color: "oklch(0.55 0.18 25)", marginBottom: 8 }}>{authError}</p>
+          )}
+          <button
+            onClick={handleLogin}
+            disabled={!inputToken.trim()}
+            className="adm-login-btn"
+          >
+            Continue →
+          </button>
         </div>
       </div>
     );
@@ -462,124 +437,80 @@ export const AdminNotes: FC = () => {
   const notesCount = notes.filter((n) => n.contentType === "note").length;
   const workCount = notes.filter((n) => n.contentType === "work").length;
 
-  // ── Sidebar nav item ──────────────────────────────────────────────────────
-  const NavItem: FC<{
-    icon: React.ReactNode;
-    label: string;
-    count?: number;
-    active: boolean;
-    onClick: () => void;
-  }> = ({ icon, label, count, active, onClick }) => (
-    <button
-      onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors text-left"
-      style={{
-        background: active ? "var(--n-active)" : "transparent",
-        color: active ? "var(--n-text)" : "var(--n-text-s)",
-      }}
-      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--n-hover)"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
-    >
-      <span className="opacity-60 shrink-0">{icon}</span>
-      <span className="flex-1 truncate">{label}</span>
-      {count !== undefined && (
-        <span className="text-xs shrink-0" style={{ color: "var(--n-text-m)" }}>{count}</span>
-      )}
-    </button>
-  );
+  const slugFolder = form.contentType === "work" ? "work" : "notes";
 
   // ── Full layout ───────────────────────────────────────────────────────────
   return (
-    <div className="flex h-screen overflow-hidden select-none" style={{ color: "var(--n-text)" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "244px 1fr", height: "100vh", overflow: "hidden", color: "var(--text)" }}>
 
       {/* ── Sidebar ── */}
-      <aside
-        className="flex w-60 shrink-0 flex-col border-r"
-        style={{ background: "var(--n-sidebar)", borderColor: "var(--n-border)" }}
-      >
-        {/* Workspace header */}
-        <div className="px-4 pt-5 pb-3">
-          <div className="flex items-center gap-2.5 rounded-md px-2 py-2">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#37352f] text-[10px] font-bold" style={{ color: "#fff" }}>
-              S
-            </div>
-            <span className="truncate text-sm font-semibold" style={{ color: "var(--n-text)" }}>
-              sskd
-            </span>
-          </div>
+      <aside className="adm-sidebar">
+        <div className="adm-brand">
+          <div className="adm-brand-mark" style={{ width: 28, height: 28, fontSize: 14 }}>s</div>
+          <span style={{ fontWeight: 600, fontSize: 14.5, letterSpacing: "-0.01em" }}>sskd</span>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5">
-          <NavItem
-            icon={<LayoutList className="w-4 h-4" />}
-            label="All entries"
-            count={notes.length}
-            active={!showForm && view === "all"}
+        <nav className="adm-nav">
+          <button
+            className={`adm-nav-item ${!showForm && view === "all" ? "active" : ""}`}
             onClick={() => { setView("all"); cancelForm(); }}
-          />
-          <NavItem
-            icon={<FileText className="w-4 h-4" />}
-            label="Notes"
-            count={notesCount}
-            active={!showForm && view === "note"}
+          >
+            <span className="adm-nav-ico"><LayoutList size={16} /></span>
+            <span className="adm-nav-label">All entries</span>
+            <span className="adm-nav-count">{notes.length}</span>
+          </button>
+          <button
+            className={`adm-nav-item ${!showForm && view === "note" ? "active" : ""}`}
             onClick={() => { setView("note"); cancelForm(); }}
-          />
-          <NavItem
-            icon={<Briefcase className="w-4 h-4" />}
-            label="Work"
-            count={workCount}
-            active={!showForm && view === "work"}
+          >
+            <span className="adm-nav-ico"><FileText size={16} /></span>
+            <span className="adm-nav-label">Notes</span>
+            <span className="adm-nav-count">{notesCount}</span>
+          </button>
+          <button
+            className={`adm-nav-item ${!showForm && view === "work" ? "active" : ""}`}
             onClick={() => { setView("work"); cancelForm(); }}
-          />
+          >
+            <span className="adm-nav-ico"><Briefcase size={16} /></span>
+            <span className="adm-nav-label">Work</span>
+            <span className="adm-nav-count">{workCount}</span>
+          </button>
 
-          <div className="my-2 border-t" style={{ borderColor: "var(--n-border)" }} />
+          <div style={{ height: 1, background: "var(--border-soft)", margin: "8px 4px" }} />
 
-          <NavItem
-            icon={<ImageIcon className="w-4 h-4" />}
-            label="Images"
-            count={uploadedImages.length}
-            active={!showForm && view === "images"}
+          <button
+            className={`adm-nav-item ${!showForm && view === "images" ? "active" : ""}`}
             onClick={() => { setView("images"); cancelForm(); }}
-          />
+          >
+            <span className="adm-nav-ico"><ImageIcon size={16} /></span>
+            <span className="adm-nav-label">Images</span>
+            <span className="adm-nav-count">{uploadedImages.length}</span>
+          </button>
         </nav>
 
-        {/* Sign out */}
-        <div className="border-t px-3 py-4" style={{ borderColor: "var(--n-border)" }}>
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors"
-            style={{ color: "var(--n-text-s)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-          >
-            <LogOut className="w-4 h-4 opacity-60" />
-            Sign out
-          </button>
-        </div>
+        <div style={{ flex: 1 }} />
+
+        <button className="adm-signout" onClick={handleLogout}>
+          <span className="adm-nav-ico" style={{ display: "grid", placeItems: "center" }}>
+            <LogOut size={16} />
+          </span>
+          Sign out
+        </button>
       </aside>
 
       {/* ── Main content ── */}
-      <main className="flex flex-1 min-w-0 flex-col overflow-y-auto bg-white">
+      <main style={{ overflowY: "auto", background: "var(--surface)" }}>
 
         {/* ── Form view ── */}
         {showForm && (
-          <div className="mx-auto w-full max-w-3xl px-16 py-10 select-text">
+          <div style={{ padding: "40px 48px 80px" }}>
+            <div className="adm-editor-wrap" style={{ color: "var(--text)" }}>
 
-            {/* Back */}
-            <button
-              onClick={cancelForm}
-              className="mb-6 flex items-center gap-1.5 text-sm transition-colors"
-              style={{ color: "var(--n-text-s)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--n-text)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--n-text-s)")}
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to entries
-            </button>
+              <button className="adm-back-link" onClick={cancelForm}>
+                <ChevronLeft size={15} />
+                Back to entries
+              </button>
 
-            {/* Page title area */}
-            <div className="mb-8">
               <input
                 value={form.title}
                 onChange={(e) =>
@@ -590,146 +521,153 @@ export const AdminNotes: FC = () => {
                   }))
                 }
                 placeholder="Untitled"
-                className="w-full bg-transparent text-[36px] font-bold leading-tight outline-none"
-                style={{ color: "var(--n-text)", caretColor: "var(--n-text)" }}
+                className="adm-doc-title"
               />
-            </div>
 
-            {/* Properties */}
-            <div
-              className="rounded-lg border p-1 mb-8 space-y-0.5"
-              style={{ borderColor: "var(--n-border)" }}
-            >
-              {/* Type */}
-              <Prop icon={<FileText className="w-3.5 h-3.5" />} label="Type">
-                <div className="flex gap-1 pt-1">
-                  {(["note", "work"] as const).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setForm((f) => ({ ...f, contentType: t }))}
-                      className="rounded px-2.5 py-0.5 text-sm transition-colors"
-                      style={{
-                        background: form.contentType === t
-                          ? (t === "work" ? "var(--n-blue-bg)" : "var(--n-gray-bg)")
-                          : "transparent",
-                        color: form.contentType === t
-                          ? (t === "work" ? "var(--n-blue-text)" : "var(--n-text)")
-                          : "var(--n-text-m)",
-                        fontWeight: form.contentType === t ? 500 : 400,
-                      }}
-                    >
-                      {t}
-                    </button>
-                  ))}
+              {/* Meta block */}
+              <div className="adm-meta">
+                {/* Type */}
+                <div className="adm-meta-row">
+                  <div className="adm-meta-label">
+                    <span className="adm-meta-label-ico"><FileText size={15} /></span>
+                    Type
+                  </div>
+                  <div className="adm-meta-field">
+                    <div className="adm-seg">
+                      {(["note", "work"] as const).map((t) => (
+                        <button
+                          key={t}
+                          className={`adm-seg-opt ${form.contentType === t ? "on" : ""}`}
+                          onClick={() => setForm((f) => ({ ...f, contentType: t }))}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </Prop>
 
-              {/* Slug */}
-              <Prop icon={<span className="font-mono text-xs">/</span>} label="Slug">
-                <input
-                  value={form.slug}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                  placeholder="my-entry-slug"
-                  className={`${propInputCls} font-mono text-xs`}
-                  style={{ color: "var(--n-text)" }}
-                />
-              </Prop>
-
-              {/* Preview */}
-              <Prop icon={<span className="text-xs">≡</span>} label="Preview">
-                <textarea
-                  value={form.preview}
-                  onChange={(e) => setForm((f) => ({ ...f, preview: e.target.value }))}
-                  placeholder="Short description…"
-                  rows={2}
-                  className={`${propInputCls} resize-none leading-relaxed`}
-                  style={{ color: "var(--n-text)" }}
-                />
-              </Prop>
-
-              {/* Tags */}
-              <Prop icon={<span className="text-xs">#</span>} label="Tags">
-                <div className="px-1.5 py-0.5">
-                  <TagEditor
-                    items={form.tagItems}
-                    onChange={(tagItems) => setForm((f) => ({ ...f, tagItems }))}
-                  />
+                {/* Slug */}
+                <div className="adm-meta-row">
+                  <div className="adm-meta-label">
+                    <span className="adm-meta-label-ico" style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 13 }}>/</span>
+                    Slug
+                  </div>
+                  <div className="adm-meta-field" style={{ flexWrap: "nowrap" }}>
+                    <span className="adm-slug-prefix">/{slugFolder}/</span>
+                    <input
+                      value={form.slug}
+                      onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                      placeholder="my-entry-slug"
+                      className="adm-meta-input mono"
+                    />
+                  </div>
                 </div>
-              </Prop>
 
-              {/* Work-only fields */}
-              {form.contentType === "work" && (
-                <>
-                  <Prop icon={<span className="text-xs">↗</span>} label="Link URL">
-                    <input
-                      value={form.link}
-                      onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
-                      placeholder="https://…"
-                      className={propInputCls}
-                      style={{ color: "var(--n-text)" }}
+                {/* Preview */}
+                <div className="adm-meta-row">
+                  <div className="adm-meta-label">
+                    <span className="adm-meta-label-ico" style={{ fontSize: 14 }}>≡</span>
+                    Preview
+                  </div>
+                  <div className="adm-meta-field" style={{ alignItems: "flex-start" }}>
+                    <textarea
+                      value={form.preview}
+                      onChange={(e) => setForm((f) => ({ ...f, preview: e.target.value }))}
+                      placeholder="Short description…"
+                      rows={2}
+                      className="adm-meta-textarea"
                     />
-                  </Prop>
-                  <Prop icon={<span className="text-xs">T</span>} label="Link text">
-                    <input
-                      value={form.linkText}
-                      onChange={(e) => setForm((f) => ({ ...f, linkText: e.target.value }))}
-                      placeholder="view project >"
-                      className={propInputCls}
-                      style={{ color: "var(--n-text)" }}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="adm-meta-row" style={{ alignItems: "start" }}>
+                  <div className="adm-meta-label">
+                    <span className="adm-meta-label-ico" style={{ fontSize: 13, fontWeight: 600 }}>#</span>
+                    Tags
+                  </div>
+                  <div className="adm-meta-field" style={{ paddingTop: 6 }}>
+                    <TagEditor
+                      items={form.tagItems}
+                      onChange={(tagItems) => setForm((f) => ({ ...f, tagItems }))}
                     />
-                  </Prop>
-                </>
-              )}
-            </div>
+                  </div>
+                </div>
 
-            {/* Content divider */}
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex-1 border-t" style={{ borderColor: "var(--n-border)" }} />
-              <span className="text-xs font-medium uppercase tracking-widest" style={{ color: "var(--n-text-m)" }}>
-                Content
-              </span>
-              <div className="flex-1 border-t" style={{ borderColor: "var(--n-border)" }} />
-            </div>
+                {/* Work-only fields */}
+                {form.contentType === "work" && (
+                  <>
+                    <div className="adm-meta-row">
+                      <div className="adm-meta-label">
+                        <span className="adm-meta-label-ico" style={{ fontSize: 13 }}>↗</span>
+                        Link URL
+                      </div>
+                      <div className="adm-meta-field">
+                        <input
+                          value={form.link}
+                          onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
+                          placeholder="https://…"
+                          className="adm-meta-input"
+                        />
+                      </div>
+                    </div>
+                    <div className="adm-meta-row">
+                      <div className="adm-meta-label">
+                        <span className="adm-meta-label-ico" style={{ fontSize: 13, fontWeight: 600 }}>T</span>
+                        Link text
+                      </div>
+                      <div className="adm-meta-field">
+                        <input
+                          value={form.linkText}
+                          onChange={(e) => setForm((f) => ({ ...f, linkText: e.target.value }))}
+                          placeholder="view project >"
+                          className="adm-meta-input"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
-            {/* Editor */}
-            <div className="rounded-lg border overflow-hidden mb-8" style={{ borderColor: "var(--n-border)" }}>
-              <BlockForgeEditor
-                key={editorKey}
-                id={`editor-${editorKey}`}
-                enabledTools={EDITOR_TOOLS}
-                tools={EDITOR_INLINE_TOOLS}
-                initialData={initialEditorData ?? undefined}
-                onChange={handleEditorChange}
-                onSave={(data) => { handleEditorChange(data); handleSave(data ?? null); }}
-                onCancel={cancelForm}
-              />
-            </div>
+              {/* Content divider */}
+              <div className="adm-content-divider"><span>Content</span></div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: "var(--n-border)" }}>
-              <button
-                onClick={() => handleSave()}
-                disabled={saving || !form.title || !form.slug}
-                className="rounded-md px-4 py-2 text-sm font-medium transition"
-                style={
-                  saving || !form.title || !form.slug
-                    ? { background: "rgba(55,53,47,0.12)", color: "rgba(55,53,47,0.4)", cursor: "not-allowed" }
-                    : { background: "#37352f", color: "#fff" }
-                }
-                onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "#000"; }}
-                onMouseLeave={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "#37352f"; }}
+              {/* Editor wrapper */}
+              <div
+                style={{
+                  borderRadius: "var(--r-lg)",
+                  overflow: "hidden",
+                  marginBottom: 24,
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--shadow-sm)",
+                }}
               >
-                {saving ? "Saving…" : editingId ? `Update ${form.contentType}` : `Publish ${form.contentType}`}
-              </button>
-              <button
-                onClick={cancelForm}
-                className="rounded-md px-4 py-2 text-sm transition-colors"
-                style={{ color: "var(--n-text-s)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-              >
-                Discard
-              </button>
+                <BlockForgeEditor
+                  key={editorKey}
+                  id={`editor-${editorKey}`}
+                  enabledTools={EDITOR_TOOLS}
+                  tools={EDITOR_INLINE_TOOLS}
+                  initialData={initialEditorData ?? undefined}
+                  onChange={handleEditorChange}
+                  onSave={(data) => { handleEditorChange(data); handleSave(data ?? null); }}
+                  onCancel={cancelForm}
+                />
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+                <button
+                  onClick={() => handleSave()}
+                  disabled={saving || !form.title || !form.slug}
+                  className="adm-btn-save"
+                >
+                  {saving ? "Saving…" : editingId ? `Update ${form.contentType}` : `Publish ${form.contentType}`}
+                </button>
+                <button onClick={cancelForm} className="adm-btn-discard">
+                  Discard
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -737,100 +675,73 @@ export const AdminNotes: FC = () => {
         {/* ── List / Images view ── */}
         {!showForm && (
           <>
-            {/* Page header */}
-            <div className="flex items-center justify-between border-b px-8 py-5" style={{ borderColor: "var(--n-border)" }}>
-              <div>
-                <h1 className="text-xl font-bold" style={{ color: "var(--n-text)" }}>
-                  {view === "all" ? "All entries" :
-                   view === "note" ? "Notes" :
-                   view === "work" ? "Work" :
-                   "Image library"}
-                </h1>
-                {view !== "images" && (
-                  <p className="mt-0.5 text-sm" style={{ color: "var(--n-text-m)" }}>
-                    {loading ? "Loading…" : `${visibleNotes.length} ${visibleNotes.length === 1 ? "entry" : "entries"}`}
-                  </p>
-                )}
-              </div>
-              {view !== "images" && (
-                <button
-                  onClick={openCreate}
-                  className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
-                  style={{
-                    borderColor: "var(--n-border-m)",
-                    color: "var(--n-text)",
-                    background: "white",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
-                >
-                  <Plus className="w-4 h-4" style={{ color: "var(--n-text-s)" }} />
-                  New entry
-                </button>
-              )}
-            </div>
-
             {/* ── Entries list ── */}
             {view !== "images" && (
-              <>
+              <div style={{ padding: "40px 48px 80px" }}>
+                <div className="adm-page-head">
+                  <div>
+                    <h1 className="adm-page-title">
+                      {view === "all" ? "All entries" :
+                       view === "note" ? "Notes" : "Work"}
+                    </h1>
+                    <p className="adm-page-sub">
+                      {loading ? "Loading…" : `${visibleNotes.length} ${visibleNotes.length === 1 ? "entry" : "entries"}`}
+                    </p>
+                  </div>
+                  <button className="adm-btn adm-btn-primary" onClick={openCreate}>
+                    <Plus size={15} />
+                    New entry
+                  </button>
+                </div>
+
                 {loading ? (
-                  <div className="flex items-center justify-center py-24">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[rgba(55,53,47,0.15)] border-t-[rgba(55,53,47,0.5)]" />
+                  <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}>
+                    <div className="adm-spinner" />
                   </div>
                 ) : visibleNotes.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-24 text-center px-8">
-                    <p className="text-base font-medium mb-1" style={{ color: "var(--n-text-s)" }}>No entries here yet</p>
-                    <p className="text-sm mb-6" style={{ color: "var(--n-text-m)" }}>
+                  <div style={{ textAlign: "center", padding: "80px 0" }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+                      No entries here yet
+                    </p>
+                    <p style={{ color: "var(--text-faint)", fontSize: 13, marginBottom: 20 }}>
                       Create your first entry to get started
                     </p>
-                    <button
-                      onClick={openCreate}
-                      className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
-                      style={{ borderColor: "var(--n-border-m)", color: "var(--n-text)", background: "white" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
-                    >
-                      <Plus className="w-4 h-4" style={{ color: "var(--n-text-s)" }} />
+                    <button className="adm-btn adm-btn-ghost" onClick={openCreate}>
+                      <Plus size={15} />
                       New entry
                     </button>
                   </div>
                 ) : (
-                  <div>
-                    {/* Column headers */}
-                    <div
-                      className="grid grid-cols-[1fr_88px_116px_40px] gap-6 px-8 py-2.5 border-b text-xs font-semibold uppercase tracking-wide"
-                      style={{ borderColor: "var(--n-border)", color: "var(--n-text-m)" }}
-                    >
+                  <div className="adm-entries">
+                    <div className="adm-entries-head">
                       <span>Title</span>
                       <span>Type</span>
                       <span>Date</span>
-                      <span />
                     </div>
 
                     {visibleNotes.map((note) => (
                       <div
                         key={note.id}
-                        className="group grid grid-cols-[1fr_88px_116px_40px] gap-6 items-center px-8 py-4 border-b transition-colors cursor-pointer"
-                        style={{ borderColor: "var(--n-border)" }}
+                        className="adm-entry-row"
                         onClick={() => openEdit(note)}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                       >
                         {/* Title cell */}
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: "var(--n-text)" }}>
-                            {note.title}
-                          </p>
-                          <p className="mt-0.5 truncate font-mono text-xs" style={{ color: "var(--n-text-m)" }}>
+                        <div>
+                          <p className="adm-entry-title">{note.title}</p>
+                          <p className="adm-entry-slug">
                             /{note.contentType === "work" ? "work" : "notes"}/{note.slug}
                           </p>
                           {note.tags && note.tags.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
+                            <div className="adm-entry-tags">
                               {note.tags.slice(0, 4).map((tag) => (
                                 <span
                                   key={tag}
-                                  className="rounded px-1.5 py-0.5 text-xs"
-                                  style={{ background: "var(--n-gray-bg)", color: "var(--n-text-s)" }}
+                                  className="adm-tag"
+                                  style={{
+                                    background: "var(--tag-gray-bg)",
+                                    color: "var(--tag-gray-tx)",
+                                    borderColor: "var(--tag-gray-bd)",
+                                  }}
                                 >
                                   {tag}
                                 </span>
@@ -842,52 +753,43 @@ export const AdminNotes: FC = () => {
                         {/* Type badge */}
                         <div>
                           <span
-                            className="rounded px-2 py-1 text-xs font-medium"
+                            className="adm-type-badge"
                             style={
                               note.contentType === "work"
-                                ? { background: "var(--n-blue-bg)", color: "var(--n-blue-text)" }
-                                : { background: "var(--n-gray-bg)", color: "var(--n-text-s)" }
+                                ? { background: "var(--badge-work-bg)", color: "var(--badge-work-tx)" }
+                                : { background: "var(--badge-note-bg)", color: "var(--badge-note-tx)" }
                             }
                           >
                             {note.contentType ?? "note"}
                           </span>
                         </div>
 
-                        {/* Date */}
-                        <div className="text-sm" style={{ color: "var(--n-text-m)" }}>
-                          {formatDate(note.createdAt)}
-                        </div>
-
-                        {/* Delete — appears on row hover */}
-                        <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Date + delete */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                          <span className="adm-entry-date">{formatDate(note.createdAt)}</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(note); }}
-                            className="rounded p-1.5 transition-colors"
+                            className="adm-delete-btn"
                             title="Delete"
-                            style={{ color: "var(--n-text-m)" }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = "rgba(235,87,87,0.08)";
-                              e.currentTarget.style.color = "#eb5757";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = "transparent";
-                              e.currentTarget.style.color = "var(--n-text-m)";
-                            }}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </>
+              </div>
             )}
 
             {/* ── Image library ── */}
             {view === "images" && (
-              <div className="px-8 py-6 space-y-5">
-                <div className="flex items-center gap-3">
+              <div style={{ padding: "40px 48px 80px" }}>
+                <div className="adm-page-head">
+                  <h1 className="adm-page-title">Image library</h1>
+                </div>
+
+                <div className="adm-lib-toolbar">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -896,46 +798,30 @@ export const AdminNotes: FC = () => {
                     className="hidden"
                     id="img-upload"
                   />
-                  <label
-                    htmlFor="img-upload"
-                    className="flex cursor-pointer items-center gap-2 rounded-md border px-3.5 py-2 text-sm font-medium transition-colors"
-                    style={{
-                      borderColor: "var(--n-border-m)",
-                      color: "var(--n-text-s)",
-                      background: "white",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--n-hover)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
-                  >
-                    <Plus className="w-4 h-4" />
+                  <label htmlFor="img-upload" className="adm-upload-btn">
+                    <Plus size={16} />
                     {uploading ? "Uploading…" : "Upload image"}
                   </label>
-                  <span className="text-xs" style={{ color: "var(--n-text-m)" }}>
-                    JPG, PNG, WebP, SVG · max 10 MB
-                  </span>
+                  <span className="adm-lib-hint">JPG, PNG, WebP, SVG · max 10 MB</span>
                 </div>
 
                 {uploadedImages.length === 0 ? (
-                  <p className="text-sm" style={{ color: "var(--n-text-m)" }}>No images uploaded yet.</p>
+                  <p style={{ color: "var(--text-faint)", fontSize: 13.5 }}>No images uploaded yet.</p>
                 ) : (
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                  <div className="adm-lib-grid">
                     {uploadedImages.map((img) => (
-                      <div
-                        key={img.name}
-                        className="group/img relative aspect-square overflow-hidden rounded-lg border"
-                        style={{ borderColor: "var(--n-border)" }}
-                      >
-                        <img src={img.url} alt={img.name} className="h-full w-full object-cover" />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/60 p-1.5 opacity-0 transition-opacity group-hover/img:opacity-100">
+                      <div key={img.name} className="adm-lib-card">
+                        <img src={img.url} alt={img.name} />
+                        <div className="adm-lib-overlay">
                           <button
                             onClick={() => copyUrl(img.url)}
-                            className="w-full rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-gray-900 transition-colors hover:bg-gray-100"
+                            className="adm-lib-action"
                           >
-                            {copied === img.url ? "Copied!" : "Copy URL"}
+                            {copied === img.url ? "Copied ✓" : "Copy URL"}
                           </button>
                           <button
                             onClick={() => handleDeleteImage(img.name)}
-                            className="text-[10px] text-red-300 hover:text-red-200 transition-colors"
+                            className="adm-lib-action danger"
                           >
                             Delete
                           </button>

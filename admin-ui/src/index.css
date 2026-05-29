@@ -2,35 +2,103 @@
 @import "@block-forge/block-forge-editor/dist/index.css";
 
 @theme {
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
 }
 
-/* ── Notion color palette ──────────────────────────────────── */
+/* ── Design tokens ─────────────────────────────────────────── */
 :root {
-  --n-text:        #37352f;
-  --n-text-s:      rgba(55, 53, 47, 0.65);
-  --n-text-m:      rgba(55, 53, 47, 0.45);
-  --n-text-p:      rgba(55, 53, 47, 0.35);
-  --n-border:      rgba(55, 53, 47, 0.09);
-  --n-border-m:    rgba(55, 53, 47, 0.16);
-  --n-hover:       rgba(55, 53, 47, 0.06);
-  --n-active:      rgba(55, 53, 47, 0.10);
-  --n-sidebar:     #f7f6f3;
-  --n-blue-bg:     rgba(35, 131, 226, 0.12);
-  --n-blue-text:   #2383e2;
-  --n-gray-bg:     rgba(227, 226, 224, 0.6);
-  --n-amber-bg:    rgba(253, 224, 71, 0.35);
+  /* Surfaces — cool, slightly bluish neutrals */
+  --bg:             oklch(0.984 0.003 244);
+  --bg-sidebar:     oklch(0.972 0.004 244);
+  --surface:        oklch(1 0 0);
+  --surface-2:      oklch(0.965 0.004 244);
+  --surface-hover:  oklch(0.958 0.005 244);
+
+  /* Text */
+  --text:           oklch(0.28 0.013 252);
+  --text-muted:     oklch(0.54 0.012 252);
+  --text-faint:     oklch(0.68 0.010 252);
+  --text-ghost:     oklch(0.78 0.008 252);
+
+  /* Borders */
+  --border:         oklch(0.918 0.004 246);
+  --border-soft:    oklch(0.945 0.004 246);
+  --border-strong:  oklch(0.86 0.006 246);
+
+  /* Warm terracotta accent */
+  --accent:         oklch(0.605 0.135 47);
+  --accent-hover:   oklch(0.545 0.142 44);
+  --accent-soft:    oklch(0.955 0.030 58);
+  --accent-line:    oklch(0.86 0.060 52);
+  --accent-text:    oklch(0.475 0.130 44);
+
+  /* Tag colors — yellow for highlighted, cool gray otherwise */
+  --tag-amber-bg:   rgba(253, 224, 71, 0.35);
+  --tag-amber-bd:   oklch(0.87 0.08 78);
+  --tag-amber-tx:   oklch(0.48 0.09 68);
+  --tag-gray-bg:    oklch(0.95 0.004 244);
+  --tag-gray-bd:    oklch(0.88 0.006 250);
+  --tag-gray-tx:    oklch(0.50 0.010 252);
+
+  /* Type badge colors */
+  --badge-note-bg:  oklch(0.95 0.006 250);
+  --badge-note-tx:  oklch(0.45 0.02 250);
+  --badge-work-bg:  oklch(0.945 0.032 240);
+  --badge-work-tx:  oklch(0.43 0.11 250);
+
+  /* Radii */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 9px;
+  --r-lg: 13px;
+  --r-xl: 18px;
+
+  /* Shadows */
+  --shadow-xs:  0 1px 2px oklch(0.4 0.02 252 / 0.05);
+  --shadow-sm:  0 1px 2px oklch(0.4 0.02 252 / 0.06), 0 1px 3px oklch(0.4 0.02 252 / 0.05);
+  --shadow-md:  0 2px 4px oklch(0.4 0.02 252 / 0.05), 0 6px 16px oklch(0.4 0.03 252 / 0.07);
+  --shadow-pop: 0 4px 10px oklch(0.4 0.02 252 / 0.07), 0 12px 32px oklch(0.4 0.03 252 / 0.12);
+
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Backward-compat aliases for any old refs */
+  --n-text:     oklch(0.28 0.013 252);
+  --n-text-s:   oklch(0.54 0.012 252);
+  --n-text-m:   oklch(0.68 0.010 252);
+  --n-border:   oklch(0.918 0.004 246);
+  --n-border-m: oklch(0.86 0.006 246);
+  --n-hover:    oklch(0.958 0.005 244);
+  --n-amber-bg: rgba(253, 224, 71, 0.35);
+  --n-gray-bg:  oklch(0.95 0.004 244);
 }
 
 body {
+  font-family: "Geist", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+
+/* Custom scrollbar */
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-thumb {
+  background: oklch(0.85 0.006 246);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.78 0.008 246);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+*::-webkit-scrollbar-track { background: transparent; }
 
 /* ── block-forge overrides ─────────────────────────────────── */
 
-/* Remove the sm:70% centered layout → full width */
 .bf-mx-auto {
   margin-left: 0 !important;
   margin-right: 0 !important;
@@ -38,14 +106,12 @@ body {
   max-width: 100% !important;
 }
 
-/* Taller editor: keep internal margins, just raise the floor */
 .bf-min-h-screen {
   min-height: 520px !important;
   box-shadow: none !important;
   border-radius: 0 !important;
 }
 
-/* EditorJS: full-width content, minimal side padding */
 .ce-block__content,
 .ce-toolbar__content {
   max-width: 100% !important;
@@ -58,24 +124,630 @@ body {
   padding-right: 16px !important;
   padding-bottom: 24px !important;
 }
-.ce-toolbar__actions {
-  right: 0 !important;
+.ce-toolbar__actions { right: 0 !important; }
+.codex-editor { font-family: "Geist", system-ui, sans-serif !important; }
+
+[role="menubar"] { display: none !important; }
+
+.bf-my-6 { margin-top: 0 !important; }
+.bf-m-8  { margin-top: 0 !important; }
+
+/* ── Login ─────────────────────────────────────────────────── */
+.adm-login-stage {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, oklch(0.97 0.012 58 / 0.5), transparent 60%),
+    var(--bg);
 }
-.codex-editor {
-  font-family: "Inter", system-ui, sans-serif !important;
+.adm-login-card {
+  width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-pop);
+  padding: 26px 26px 24px;
+}
+.adm-brand-mark {
+  display: grid;
+  place-items: center;
+  background: oklch(0.26 0.01 252);
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  box-shadow: var(--shadow-xs);
+  flex: none;
+  border-radius: 7px;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-token-input {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  padding: 11px 13px;
+  font-size: 13.5px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  background: var(--surface-2);
+  outline: none;
+  transition: border-color 0.14s, box-shadow 0.14s, background 0.14s;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+.adm-token-input::placeholder { font-family: "Geist", system-ui, sans-serif; color: var(--text-ghost); }
+.adm-token-input:focus {
+  border-color: var(--accent-line);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.adm-login-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: var(--r-md);
+  font-size: 13.5px;
+  font-weight: 500;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  box-shadow: var(--shadow-xs);
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-login-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.adm-login-btn:disabled {
+  background: var(--surface-2);
+  color: var(--text-ghost);
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
-/* Hide File/Settings/Help menubar (we handle save in our form) */
-[role="menubar"] {
-  display: none !important;
+/* ── Sidebar ───────────────────────────────────────────────── */
+.adm-sidebar {
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 12px 14px;
+}
+.adm-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 4px;
+  margin-bottom: 18px;
+}
+.adm-nav { display: flex; flex-direction: column; gap: 1px; }
+.adm-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: var(--r-sm);
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 400;
+  transition: background 0.13s var(--ease), color 0.13s var(--ease);
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-nav-ico { color: var(--text-faint); display: grid; place-items: center; transition: color 0.13s var(--ease); }
+.adm-nav-label { flex: 1; }
+.adm-nav-count {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-ghost);
+  font-family: "Geist Mono", ui-monospace, monospace;
+}
+.adm-nav-item:hover { background: var(--surface-hover); color: var(--text); }
+.adm-nav-item:hover .adm-nav-ico { color: var(--text-muted); }
+.adm-nav-item.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-xs);
+  font-weight: 500;
+}
+.adm-nav-item.active .adm-nav-ico { color: var(--accent); }
+.adm-nav-item.active .adm-nav-count { color: var(--text-muted); }
+
+.adm-signout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px;
+  border-radius: var(--r-sm);
+  color: var(--text-faint);
+  font-size: 13px;
+  transition: background 0.13s var(--ease), color 0.13s var(--ease);
+  width: 100%;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: "Geist", system-ui, sans-serif;
+  text-align: left;
+}
+.adm-signout:hover { background: var(--surface-hover); color: var(--accent-text); }
+
+/* ── Page header ───────────────────────────────────────────── */
+.adm-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 26px;
+  gap: 24px;
+}
+.adm-page-title {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.adm-page-sub {
+  font-size: 13px;
+  color: var(--text-faint);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Remove leftover top gap after hiding the menubar.
-   .bf-my-6 adds 1.5rem top margin on the outer wrapper;
-   .bf-m-8 adds 2rem on the editor mount div. Zero both. */
-.bf-my-6 {
-  margin-top: 0 !important;
+/* ── Buttons ───────────────────────────────────────────────── */
+.adm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.14s var(--ease);
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  font-family: "Geist", system-ui, sans-serif;
 }
-.bf-m-8 {
-  margin-top: 0 !important;
+.adm-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--shadow-xs);
 }
+.adm-btn-primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.adm-btn-primary:active { transform: translateY(0); }
+.adm-btn-ghost {
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.adm-btn-ghost:hover { color: var(--text); border-color: var(--border-strong); box-shadow: var(--shadow-xs); }
+
+/* ── Entries table ─────────────────────────────────────────── */
+.adm-entries { display: flex; flex-direction: column; }
+.adm-entries-head {
+  display: grid;
+  grid-template-columns: 1fr 110px 130px;
+  gap: 20px;
+  padding: 0 14px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  font-weight: 500;
+  color: var(--text-ghost);
+  text-transform: uppercase;
+}
+.adm-entry-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 130px;
+  gap: 20px;
+  align-items: center;
+  padding: 16px 14px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background 0.13s var(--ease), box-shadow 0.13s var(--ease);
+  border: 1px solid transparent;
+}
+.adm-entry-row + .adm-entry-row { box-shadow: 0 -1px 0 var(--border-soft); }
+.adm-entry-row:hover {
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border-soft);
+}
+.adm-entry-row:hover + .adm-entry-row { box-shadow: none; }
+.adm-entry-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.adm-entry-slug {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--text-ghost);
+}
+.adm-entry-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.adm-entry-date {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Tag pills ─────────────────────────────────────────────── */
+.adm-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  cursor: default;
+}
+.adm-tag-x {
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 99px;
+  margin-right: -3px;
+  opacity: 0.55;
+  transition: opacity 0.12s, background 0.12s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+.adm-tag-x:hover { opacity: 1; background: oklch(0 0 0 / 0.07); }
+
+/* ── Type badge ────────────────────────────────────────────── */
+.adm-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* ── Delete button (shown on row hover) ────────────────────── */
+.adm-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  color: var(--text-faint);
+  transition: all 0.13s var(--ease);
+  cursor: pointer;
+  border: none;
+  background: none;
+  opacity: 0;
+  font-family: inherit;
+  flex: none;
+}
+.adm-entry-row:hover .adm-delete-btn { opacity: 1; }
+.adm-delete-btn:hover {
+  background: oklch(0.55 0.18 25 / 0.1);
+  color: oklch(0.55 0.18 25);
+}
+
+/* ── Editor view ───────────────────────────────────────────── */
+.adm-editor-wrap { max-width: 760px; margin: 0 auto; }
+
+.adm-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 13px;
+  padding: 5px 8px 5px 6px;
+  margin: -5px 0 18px -6px;
+  border-radius: var(--r-sm);
+  transition: color 0.13s, background 0.13s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-back-link:hover { color: var(--accent-text); background: var(--surface-hover); }
+
+.adm-doc-title {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  border: none;
+  outline: none;
+  background: none;
+  width: 100%;
+  margin-bottom: 24px;
+  line-height: 1.15;
+  padding: 2px 0;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-doc-title::placeholder { color: var(--text-ghost); font-weight: 700; }
+
+/* Meta block */
+.adm-meta {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 6px;
+  margin-bottom: 36px;
+}
+.adm-meta-row {
+  display: grid;
+  grid-template-columns: 142px 1fr;
+  align-items: start;
+  gap: 16px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  transition: background 0.12s var(--ease);
+  min-height: 42px;
+}
+.adm-meta-row:hover { background: var(--surface-2); }
+.adm-meta-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 400;
+  padding-top: 6px;
+}
+.adm-meta-label-ico {
+  width: 15px;
+  height: 15px;
+  color: var(--text-ghost);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.adm-meta-field {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 1px;
+}
+.adm-meta-input {
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 14px;
+  color: var(--text);
+  width: 100%;
+  padding: 5px 2px;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-meta-input::placeholder { color: var(--text-ghost); }
+.adm-meta-input.mono {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 13px;
+}
+.adm-meta-textarea {
+  border: none;
+  outline: none;
+  background: none;
+  resize: none;
+  font-size: 14px;
+  color: var(--text);
+  width: 100%;
+  padding: 5px 2px;
+  min-height: 26px;
+  line-height: 1.55;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-meta-textarea::placeholder { color: var(--text-ghost); }
+.adm-slug-prefix {
+  color: var(--text-ghost);
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 13px;
+  flex: none;
+}
+
+/* Segmented type toggle */
+.adm-seg {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm);
+  gap: 2px;
+}
+.adm-seg-opt {
+  padding: 4px 13px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-muted);
+  transition: all 0.14s var(--ease);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-seg-opt:hover { color: var(--text); }
+.adm-seg-opt.on {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  box-shadow: var(--shadow-xs);
+}
+
+/* Dashed "add tag" pill */
+.adm-tag-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 99px;
+  font-size: 12px;
+  color: var(--text-faint);
+  border: 1px dashed var(--border-strong);
+  transition: all 0.13s var(--ease);
+  cursor: text;
+  background: none;
+}
+.adm-tag-add:hover { color: var(--accent-text); border-color: var(--accent-line); background: var(--accent-soft); }
+.adm-tag-input-inline {
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 12px;
+  width: 90px;
+  padding: 3px 4px;
+  font-family: "Geist", system-ui, sans-serif;
+  color: var(--text-muted);
+}
+
+/* Content divider */
+.adm-content-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 22px;
+}
+.adm-content-divider::before,
+.adm-content-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+.adm-content-divider span {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  font-weight: 500;
+  color: var(--text-ghost);
+  text-transform: uppercase;
+}
+
+/* Editor action buttons */
+.adm-btn-save {
+  padding: 9px 20px;
+  border-radius: var(--r-md);
+  font-size: 13.5px;
+  font-weight: 500;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.14s var(--ease);
+  cursor: pointer;
+  border: none;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-btn-save:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.adm-btn-save:disabled {
+  background: var(--surface-2);
+  color: var(--text-ghost);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.adm-btn-discard {
+  padding: 9px 16px;
+  border-radius: var(--r-md);
+  font-size: 13.5px;
+  color: var(--text-muted);
+  transition: all 0.14s var(--ease);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-btn-discard:hover { color: var(--text); background: var(--surface-hover); }
+
+/* ── Image library ─────────────────────────────────────────── */
+.adm-lib-toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+.adm-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  background: var(--surface);
+  transition: all 0.14s var(--ease);
+  cursor: pointer;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-upload-btn:hover { border-color: var(--accent-line); color: var(--accent-text); background: var(--accent-soft); }
+.adm-lib-hint { font-size: 12.5px; color: var(--text-faint); }
+.adm-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+.adm-lib-card {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: box-shadow 0.16s var(--ease), transform 0.16s var(--ease);
+}
+.adm-lib-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.adm-lib-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.adm-lib-overlay {
+  position: absolute;
+  inset: 0;
+  background: oklch(0.18 0.01 252 / 0.62);
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.16s var(--ease);
+}
+.adm-lib-card:hover .adm-lib-overlay { opacity: 1; }
+.adm-lib-action {
+  color: oklch(0.96 0.005 244);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 18px;
+  border-radius: var(--r-sm);
+  transition: background 0.12s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: "Geist", system-ui, sans-serif;
+}
+.adm-lib-action:hover { background: oklch(1 0 0 / 0.12); }
+.adm-lib-action.danger:hover { background: oklch(0.55 0.18 25 / 0.32); color: oklch(0.92 0.05 25); }
+
+/* ── Spinner ───────────────────────────────────────────────── */
+.adm-spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 99px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--text-muted);
+  animation: adm-spin 0.7s linear infinite;
+}
+@keyframes adm-spin { to { transform: rotate(360deg); } }
