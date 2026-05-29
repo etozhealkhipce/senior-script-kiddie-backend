@@ -1,5 +1,5 @@
 import { Toaster } from "sileo";
-import { AdminNotes } from "./admin-notes";
+import { AdminNotes } from "./admin";
 
 export default function App() {
   return (
