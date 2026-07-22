@@ -22,7 +22,7 @@ import { UploadModule } from './upload/upload.module';
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'admin-ui', 'dist'),
-      exclude: ['/api/(.*)'],
+      exclude: ['/api/{*path}'],
     }),
     AdminAuthModule,
     NotesModule,
