@@ -26,25 +26,21 @@ make install-admin
 make build-admin       # or: cd admin-ui && npm run dev
 ```
 
-## Admin token
+## Admin login
 
-The admin token lives **in memory** (no file, no env var). It is generated on demand and expires after 24 hours. After a redeploy the pod memory is cleared — just generate a new one.
+- **First start:** the backend creates the admin with password `admin123`. Sign in, set a new
+  password and scan the QR code with any TOTP app (Authy, Google Authenticator, Apple Passwords…).
+  Until that is done only the setup screen is available.
+- **Everyday:** "Sign in with Face ID" (passkey) or password + 6-digit code.
+- **Settings page:** add/remove passkeys, change password (needs a code), re-enroll the
+  authenticator (needs the password), sign out everywhere.
+- **Lost both the password and the authenticator (or the authenticator and every passkey):**
+  `make reset-admin` — wipes admin credentials in prod and restarts the pod; sign in with
+  `admin123` again. Right after the restart, sign in with `admin123` and finish setup
+  immediately — the default password is public until you do.
 
-**Production (k3s):**
-
-```bash
-kubectl exec -n sskd deployment/sskd-backend -- \
-  wget -qO- --post-data="" "http://localhost:3000/api/admin/token"
-```
-
-**Local:**
-
-```bash
-curl -X POST http://localhost:3000/api/admin/token
-```
-
-Copy the `token` value → paste it in the admin UI login.  
-The endpoint is protected by `LocalhostGuard` — only accessible from inside the pod.
+WebAuthn needs `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN` (set in `deploy/values.yml`; locally they
+default to `localhost` / `http://localhost:3000`).
 
 ## Deploy
 

@@ -4,18 +4,20 @@ import { type View } from "./constants";
 import { useAdmin } from "./useAdmin";
 import { Sidebar } from "./components/Sidebar";
 import { MobileBar } from "./components/MobileBar";
+import { SetupPage } from "./pages/SetupPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ListPage } from "./pages/ListPage";
 import { ImageLibrary } from "./pages/ImageLibrary";
 import { EditorPage } from "./pages/EditorPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 export const AdminNotes: FC = () => {
   const admin = useAdmin();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const {
-    inputToken, setInputToken, authError, authenticated,
-    handleLogin, handleLogout,
+    token, sessionKind, authenticated, applyAuth,
+    handleExpired, handleLogout, handleLogoutEverywhere,
     notes, loading, view, setView,
     editingId, showForm, form, setForm,
     editorKey, initialEditorData, saving,
@@ -25,15 +27,12 @@ export const AdminNotes: FC = () => {
     visibleNotes, notesCount, workCount,
   } = admin;
 
+  if (sessionKind === "setup") {
+    return <SetupPage token={token} onDone={applyAuth} onExpired={handleExpired} />;
+  }
+
   if (!authenticated) {
-    return (
-      <LoginPage
-        inputToken={inputToken}
-        authError={authError}
-        onTokenChange={setInputToken}
-        onLogin={handleLogin}
-      />
-    );
+    return <LoginPage onAuthenticated={applyAuth} />;
   }
 
   const handleNavigate = (v: View) => {
@@ -47,7 +46,8 @@ export const AdminNotes: FC = () => {
     : view === "all" ? "All entries"
     : view === "note" ? "Notes"
     : view === "work" ? "Work"
-    : "Images";
+    : view === "images" ? "Images"
+    : "Settings";
 
   return (
     <div className="adm-device-shell">
@@ -84,7 +84,7 @@ export const AdminNotes: FC = () => {
               />
             )}
 
-            {!showForm && view !== "images" && (
+            {!showForm && view !== "images" && view !== "settings" && (
               <ListPage
                 view={view}
                 visibleNotes={visibleNotes}
@@ -104,6 +104,14 @@ export const AdminNotes: FC = () => {
                 onUpload={handleUpload}
                 onDelete={handleDeleteImage}
                 onCopy={copyUrl}
+              />
+            )}
+
+            {!showForm && view === "settings" && (
+              <SettingsPage
+                token={token}
+                onExpired={handleExpired}
+                onLogoutEverywhere={handleLogoutEverywhere}
               />
             )}
           </div>

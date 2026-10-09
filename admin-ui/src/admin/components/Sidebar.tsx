@@ -1,4 +1,4 @@
-import { Briefcase, FileText, Image as ImageIcon, LayoutList, LogOut } from "lucide-react";
+import { Briefcase, FileText, Image as ImageIcon, LayoutList, LogOut, Settings } from "lucide-react";
 import { type FC } from "react";
 import type { NoteApiData } from "../../types";
 import type { View } from "../constants";
@@ -17,7 +17,7 @@ interface SidebarProps {
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
-  count: number;
+  count?: number;
   active: boolean;
   onClick: () => void;
 }
@@ -26,7 +26,7 @@ const NavItem: FC<NavItemProps> = ({ icon, label, count, active, onClick }) => (
   <button className={`adm-nav-item ${active ? "active" : ""}`} onClick={onClick}>
     <span className="adm-nav-ico">{icon}</span>
     <span className="adm-nav-label">{label}</span>
-    <span className="adm-nav-count">{count}</span>
+    {count !== undefined && <span className="adm-nav-count">{count}</span>}
   </button>
 );
 
@@ -52,6 +52,7 @@ export const Sidebar: FC<SidebarProps> = ({
         <div className="h-px bg-line-soft my-2 mx-1" />
 
         <NavItem icon={<ImageIcon size={16} />} label="Images" count={uploadedImages.length} active={isActive("images")} onClick={() => onNavigate("images")} />
+        <NavItem icon={<Settings size={16} />} label="Settings" active={isActive("settings")} onClick={() => onNavigate("settings")} />
       </nav>
 
       <div className="flex-1" />

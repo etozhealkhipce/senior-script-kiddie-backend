@@ -33,6 +33,8 @@ app:
     POSTGRES_PORT: "5432"
     POSTGRES_USER: "postgres"
     POSTGRES_DB: "senior_script_kiddie"
+    WEBAUTHN_RP_ID: "admin.sskd.tech"
+    WEBAUTHN_ORIGIN: "https://admin.sskd.tech"
 
   envFrom:
     - secretRef:

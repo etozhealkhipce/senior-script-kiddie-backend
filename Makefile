@@ -4,7 +4,7 @@ export
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-admin build build-admin db-up db-down db-logs dev start lint test seed up
+.PHONY: help install install-admin build build-admin db-up db-down db-logs dev start lint test seed up reset-admin
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -49,7 +49,14 @@ seed: ## Seed the effector note (needs token, usage: TOKEN=xxx make seed)
 	  -H "Content-Type: application/json" \
 	  -H "x-admin-token: $(TOKEN)" \
 	  -d @seed/effector-note.json \
-	  && echo " ✓ Seeded" || echo " ✗ Failed — is the backend running? Usage: TOKEN=<token> make seed"
+	  && echo " ✓ Seeded" || echo " ✗ Failed — is the backend running? Usage: TOKEN=<token from admin localStorage> make seed"
 
 up: db-up ## Start DB and then dev server (blocks)
 	npm run start:dev
+
+reset-admin: ## Break glass: wipe admin password, authenticator and passkeys in prod (back to admin123)
+	@read -p "This wipes the PROD admin password, authenticator and passkeys (back to admin123). Type 'reset' to continue: " ans && [ "$$ans" = "reset" ]
+	kubectl exec -n sskd deployment/sskd-postgres -- \
+	  psql -U postgres -d senior_script_kiddie \
+	  -c 'DELETE FROM admin_sessions; DELETE FROM admin_passkeys; DELETE FROM admin_account;'
+	kubectl rollout restart -n sskd deployment/sskd-backend

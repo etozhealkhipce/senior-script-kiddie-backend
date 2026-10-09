@@ -9,7 +9,7 @@ export const EDITOR_TOOLS: string[] = [
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const EDITOR_INLINE_TOOLS: Record<string, any> = { marker: { class: Marker } };
 
-export type View = "all" | "note" | "work" | "images";
+export type View = "all" | "note" | "work" | "images" | "settings";
 
 export type TagItem = { title: string; highlight: boolean };
 

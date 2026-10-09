@@ -1,5 +1,6 @@
 import { sileo } from "sileo";
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { authApi, type AuthResult, type SessionKind } from "./auth/api";
 import type { NoteApiData, SubtitleItem } from "../types";
 import { TOKEN_KEY, EMPTY_FORM, type View, type NoteForm, type OutputData, type TagItem } from "./constants";
 import { slugify, formatDate, replaceBase64WithUploads } from "./utils";
@@ -10,9 +11,8 @@ export { slugify, formatDate };
 export function useAdmin() {
   // ── Auth ────────────────────────────────────────────────────
   const [token, setToken] = useState("");
-  const [inputToken, setInputToken] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
+  const [sessionKind, setSessionKind] = useState<SessionKind | null>(null);
+  const authenticated = sessionKind === "full";
 
   // ── Notes ───────────────────────────────────────────────────
   const [notes, setNotes] = useState<NoteApiData[]>([]);
@@ -36,27 +36,34 @@ export function useAdmin() {
   const ah = () => ({ "x-admin-token": token });
 
   // ── Auth handlers ────────────────────────────────────────────
-  const handleExpired = useCallback(() => {
+  const clearSession = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
-    setAuthenticated(false);
     setToken("");
-    sileo.error({ title: "Session expired — sign in again" });
+    setSessionKind(null);
   }, []);
 
-  const handleLogin = async () => {
-    setAuthError("");
-    const t = inputToken.trim();
-    if (!t) return;
-    const res = await fetch("/api/admin/validate", { headers: { "x-admin-token": t } });
-    if (!res.ok) { setAuthError("Invalid token"); return; }
-    localStorage.setItem(TOKEN_KEY, t);
-    setToken(t);
-    setAuthenticated(true);
+  const handleExpired = useCallback(() => {
+    clearSession();
+    sileo.error({ title: "Session expired — sign in again" });
+  }, [clearSession]);
+
+  // Setup sessions live 15 minutes and are not persisted.
+  const applyAuth = useCallback((result: AuthResult) => {
+    if (result.kind === "full") localStorage.setItem(TOKEN_KEY, result.token);
+    setToken(result.token);
+    setSessionKind(result.kind);
+  }, []);
+
+  const handleLogout = async () => {
+    if (token) await authApi.logout(token).catch(() => undefined);
+    clearSession();
+    setNotes([]);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    setToken(""); setAuthenticated(false); setInputToken(""); setNotes([]);
+  const handleLogoutEverywhere = async () => {
+    await authApi.logoutAll(token).catch(() => undefined);
+    clearSession();
+    setNotes([]);
   };
 
   // ── Auto-login from localStorage ────────────────────────────
@@ -64,7 +71,7 @@ export function useAdmin() {
     const saved = localStorage.getItem(TOKEN_KEY);
     if (!saved) return;
     fetch("/api/admin/validate", { headers: { "x-admin-token": saved } }).then((r) => {
-      if (r.ok) { setToken(saved); setAuthenticated(true); }
+      if (r.ok) { setToken(saved); setSessionKind("full"); }
       else localStorage.removeItem(TOKEN_KEY);
     });
   }, []);
@@ -234,8 +241,8 @@ export function useAdmin() {
 
   return {
     // auth
-    token, inputToken, setInputToken, authError, authenticated,
-    handleLogin, handleLogout,
+    token, sessionKind, authenticated, applyAuth,
+    handleExpired, handleLogout, handleLogoutEverywhere,
     // notes
     notes, loading, view, setView,
     // form
