@@ -1,7 +1,7 @@
-import { Plus } from "lucide-react";
 import { type ChangeEvent, type FC, type RefObject, useState } from "react";
+import { Button, PageHeader, useConfirm } from "../../ui";
 
-interface ImageLibraryProps {
+type ImageLibraryProps = {
   uploadedImages: { name: string; url: string }[];
   uploading: boolean;
   copied: string | null;
@@ -9,68 +9,86 @@ interface ImageLibraryProps {
   onUpload: (e: ChangeEvent<HTMLInputElement>) => void;
   onDelete: (name: string) => void;
   onCopy: (url: string) => void;
-}
+};
 
 export const ImageLibrary: FC<ImageLibraryProps> = ({
-  uploadedImages, uploading, copied, fileInputRef,
-  onUpload, onDelete, onCopy,
+  uploadedImages,
+  uploading,
+  copied,
+  fileInputRef,
+  onUpload,
+  onDelete,
+  onCopy,
 }) => {
-  const [activeCard, setActiveCard] = useState<string | null>(null);
+  const confirm = useConfirm();
+  const [active, setActive] = useState<string | null>(null);
 
-  const toggleActive = (name: string) =>
-    setActiveCard((prev) => (prev === name ? null : name));
+  const remove = async (name: string) => {
+    const ok = await confirm({
+      title: "delete image?",
+      body: name,
+      confirmLabel: "delete",
+      danger: true,
+    });
+    if (ok) onDelete(name);
+  };
 
   return (
-    <div className="adm-main-inner">
-      <div className="adm-page-head">
-        <h1 className="adm-page-title">Image library</h1>
-      </div>
-
-      <div className="adm-lib-toolbar">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={onUpload}
-          className="hidden"
-          id="img-upload"
-        />
-        <label htmlFor="img-upload" className="adm-upload-btn">
-          <Plus size={16} />
-          {uploading ? "Uploading…" : "Upload image"}
-        </label>
-        <span className="adm-lib-hint">JPG, PNG, WebP, SVG · max 10 MB</span>
-      </div>
+    <section className="page">
+      <PageHeader
+        title="images"
+        subtitle="jpg, png, webp, svg · max 10 mb"
+        actions={
+          <Button
+            variant="primary"
+            loading={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            + upload
+          </Button>
+        }
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={onUpload}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
 
       {uploadedImages.length === 0 ? (
-        <p className="text-faint text-[13.5px]">No images uploaded yet.</p>
+        <p className="text-sm text-secondary">no images yet</p>
       ) : (
-        <div className="adm-lib-grid">
+        <ul className="image-grid">
           {uploadedImages.map((img) => (
-            <div
-              key={img.name}
-              className={`adm-lib-card ${activeCard === img.name ? "active" : ""}`}
-              onClick={() => toggleActive(img.name)}
-            >
-              <img src={img.url} alt={img.name} />
-              <div className="adm-lib-overlay">
+            <li key={img.name}>
+              <div className="image-card">
                 <button
-                  className="adm-lib-action"
-                  onClick={(e) => { e.stopPropagation(); onCopy(img.url); }}
+                  type="button"
+                  className="image-thumb"
+                  aria-expanded={active === img.name}
+                  aria-label={img.name}
+                  onClick={() => setActive(active === img.name ? null : img.name)}
                 >
-                  {copied === img.url ? "Copied ✓" : "Copy URL"}
+                  <img src={img.url} alt="" loading="lazy" />
                 </button>
-                <button
-                  className="adm-lib-action danger"
-                  onClick={(e) => { e.stopPropagation(); onDelete(img.name); }}
-                >
-                  Delete
-                </button>
+                {active === img.name && (
+                  <div className="image-actions">
+                    <Button block onClick={() => onCopy(img.url)}>
+                      {copied === img.url ? "copied" : "copy url"}
+                    </Button>
+                    <Button variant="danger" block onClick={() => void remove(img.name)}>
+                      delete
+                    </Button>
+                  </div>
+                )}
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </section>
   );
 };

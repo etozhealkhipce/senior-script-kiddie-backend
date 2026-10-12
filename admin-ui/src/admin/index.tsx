@@ -1,31 +1,55 @@
-import { type FC, useState } from "react";
+import type { FC } from "react";
 import type { NoteApiData } from "../types";
-import { type View } from "./constants";
-import { useAdmin } from "./useAdmin";
-import { Sidebar } from "./components/Sidebar";
-import { MobileBar } from "./components/MobileBar";
-import { SetupPage } from "./pages/SetupPage";
-import { LoginPage } from "./pages/LoginPage";
-import { ListPage } from "./pages/ListPage";
-import { ImageLibrary } from "./pages/ImageLibrary";
+import { AppShell, type Section } from "./components/AppShell";
+import type { View } from "./constants";
 import { EditorPage } from "./pages/EditorPage";
+import { ImageLibrary } from "./pages/ImageLibrary";
+import { type EntryFilter, ListPage } from "./pages/ListPage";
+import { LoginPage } from "./pages/LoginPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SetupPage } from "./pages/SetupPage";
+import { useAdmin } from "./useAdmin";
+
+const sectionOf = (view: View): Section =>
+  view === "images" ? "images" : view === "settings" ? "settings" : "entries";
 
 export const AdminNotes: FC = () => {
-  const admin = useAdmin();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
   const {
-    token, sessionKind, authenticated, applyAuth,
-    handleExpired, handleLogout, handleLogoutEverywhere,
-    notes, loading, view, setView,
-    editingId, showForm, form, setForm,
-    editorKey, initialEditorData, saving,
-    handleEditorChange, cancelForm, openCreate, openEdit, handleSave, handleDelete,
-    uploadedImages, uploading, copied, fileInputRef,
-    handleUpload, handleDeleteImage, copyUrl,
-    visibleNotes, notesCount, workCount,
-  } = admin;
+    token,
+    sessionKind,
+    authenticated,
+    applyAuth,
+    handleExpired,
+    handleLogout,
+    handleLogoutEverywhere,
+    notes,
+    loading,
+    view,
+    setView,
+    editingId,
+    showForm,
+    form,
+    setForm,
+    editorKey,
+    initialEditorData,
+    saving,
+    handleEditorChange,
+    cancelForm,
+    openCreate,
+    openEdit,
+    handleSave,
+    handleDelete,
+    uploadedImages,
+    uploading,
+    copied,
+    fileInputRef,
+    handleUpload,
+    handleDeleteImage,
+    copyUrl,
+    visibleNotes,
+    notesCount,
+    workCount,
+  } = useAdmin();
 
   if (sessionKind === "setup") {
     return <SetupPage token={token} onDone={applyAuth} onExpired={handleExpired} />;
@@ -35,88 +59,66 @@ export const AdminNotes: FC = () => {
     return <LoginPage onAuthenticated={applyAuth} />;
   }
 
-  const handleNavigate = (v: View) => {
-    setView(v);
+  const section = sectionOf(view);
+
+  const navigate = (next: Section) => {
     cancelForm();
-    setDrawerOpen(false);
+    setView(next === "entries" ? "all" : next);
+    window.scrollTo({ top: 0 });
   };
 
-  const mobileTitle = showForm
-    ? (editingId ? `Edit ${form.contentType}` : "New entry")
-    : view === "all" ? "All entries"
-    : view === "note" ? "Notes"
-    : view === "work" ? "Work"
-    : view === "images" ? "Images"
-    : "Settings";
+  const title = showForm ? (editingId ? `edit ${form.contentType}` : "new entry") : section;
 
   return (
-    <div className="adm-device-shell">
-      <div className="adm-app" data-drawer={drawerOpen ? "true" : undefined}>
-
-        <div className="adm-scrim" onClick={() => setDrawerOpen(false)} />
-
-        <Sidebar
-          view={view}
-          showForm={showForm}
-          notes={notes}
-          uploadedImages={uploadedImages}
-          notesCount={notesCount}
-          workCount={workCount}
-          onNavigate={handleNavigate}
-          onLogout={handleLogout}
+    <AppShell
+      section={section}
+      title={title}
+      entriesCount={notes.length}
+      imagesCount={uploadedImages.length}
+      hideTabBar={showForm}
+      onNavigate={navigate}
+      onLogout={handleLogout}
+    >
+      {showForm ? (
+        <EditorPage
+          form={form}
+          editingId={editingId}
+          editorKey={editorKey}
+          initialEditorData={initialEditorData}
+          saving={saving}
+          onFormChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+          onEditorChange={handleEditorChange}
+          onSave={handleSave}
+          onCancel={cancelForm}
         />
-
-        <main className="adm-main">
-          <MobileBar title={mobileTitle} onMenuClick={() => setDrawerOpen(true)} />
-
-          <div className="adm-main-scroll">
-            {showForm && (
-              <EditorPage
-                form={form}
-                editingId={editingId}
-                editorKey={editorKey}
-                initialEditorData={initialEditorData}
-                saving={saving}
-                onFormChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-                onEditorChange={handleEditorChange}
-                onSave={handleSave}
-                onCancel={cancelForm}
-              />
-            )}
-
-            {!showForm && view !== "images" && view !== "settings" && (
-              <ListPage
-                view={view}
-                visibleNotes={visibleNotes}
-                loading={loading}
-                onNew={openCreate}
-                onEdit={(note: NoteApiData) => openEdit(note)}
-                onDelete={handleDelete}
-              />
-            )}
-
-            {!showForm && view === "images" && (
-              <ImageLibrary
-                uploadedImages={uploadedImages}
-                uploading={uploading}
-                copied={copied}
-                fileInputRef={fileInputRef}
-                onUpload={handleUpload}
-                onDelete={handleDeleteImage}
-                onCopy={copyUrl}
-              />
-            )}
-
-            {!showForm && view === "settings" && (
-              <SettingsPage
-                token={token}
-                onExpired={handleExpired}
-                onLogoutEverywhere={handleLogoutEverywhere}
-              />
-            )}
-          </div>
-        </main>
-      </div>
-    </div>
+      ) : section === "entries" ? (
+        <ListPage
+          filter={view as EntryFilter}
+          onFilterChange={setView}
+          notes={visibleNotes}
+          counts={{ all: notes.length, note: notesCount, work: workCount }}
+          loading={loading}
+          onNew={openCreate}
+          onEdit={(note: NoteApiData) => openEdit(note)}
+          onDelete={handleDelete}
+        />
+      ) : section === "images" ? (
+        <ImageLibrary
+          uploadedImages={uploadedImages}
+          uploading={uploading}
+          copied={copied}
+          fileInputRef={fileInputRef}
+          onUpload={handleUpload}
+          onDelete={handleDeleteImage}
+          onCopy={copyUrl}
+        />
+      ) : (
+        <SettingsPage
+          token={token}
+          onExpired={handleExpired}
+          onLogoutEverywhere={handleLogoutEverywhere}
+        />
+      )}
+    </AppShell>
   );
 };

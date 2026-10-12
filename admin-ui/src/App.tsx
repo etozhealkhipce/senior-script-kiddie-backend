@@ -1,11 +1,11 @@
-import { Toaster } from "sileo";
 import { AdminNotes } from "./admin";
+import { ConfirmProvider, Toaster } from "./ui";
 
 export default function App() {
   return (
-    <>
-      <Toaster position="top-right" theme="light" />
+    <ConfirmProvider>
+      <Toaster />
       <AdminNotes />
-    </>
+    </ConfirmProvider>
   );
 }

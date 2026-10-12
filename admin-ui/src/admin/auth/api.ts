@@ -8,10 +8,18 @@ import type {
 export type SessionKind = "full" | "setup";
 export type AuthResult = { token: string; kind: SessionKind };
 export type TotpSetup = { secret: string; otpauthUri: string };
-export type PasskeyView = { id: string; name: string; createdAt: string; lastUsedAt: string | null };
+export type PasskeyView = {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+};
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
@@ -23,7 +31,8 @@ export function describeAuthError(e: unknown): string {
     }
     return e.message;
   }
-  if (e instanceof Error && e.name === "NotAllowedError") return "Face ID was cancelled or timed out";
+  if (e instanceof Error && e.name === "NotAllowedError")
+    return "Face ID was cancelled or timed out";
   return e instanceof Error ? e.message : String(e);
 }
 
@@ -41,7 +50,9 @@ async function request<T>(path: string, { token, method, json }: RequestOptions 
   });
   if (!res.ok) {
     const b = await res.json().catch(() => ({}));
-    const message = Array.isArray(b.message) ? b.message.join(", ") : b.message ?? `HTTP ${res.status}`;
+    const message = Array.isArray(b.message)
+      ? b.message.join(", ")
+      : (b.message ?? `HTTP ${res.status}`);
     throw new ApiError(res.status, message);
   }
   return res.status === 204 ? (undefined as T) : res.json();
@@ -59,7 +70,10 @@ export const authApi = {
   passkeyLoginVerify: (response: AuthenticationResponseJSON) =>
     request<AuthResult>("/passkey/login/verify", { json: { response } }),
   passkeyRegisterOptions: (token: string) =>
-    request<PublicKeyCredentialCreationOptionsJSON>("/passkey/register/options", { token, method: "POST" }),
+    request<PublicKeyCredentialCreationOptionsJSON>("/passkey/register/options", {
+      token,
+      method: "POST",
+    }),
   passkeyRegisterVerify: (token: string, response: RegistrationResponseJSON, name: string) =>
     request<PasskeyView>("/passkey/register/verify", { token, json: { response, name } }),
   listPasskeys: (token: string) => request<PasskeyView[]>("/passkeys", { token }),
@@ -70,7 +84,8 @@ export const authApi = {
     request<void>("/password", { token, json: { newPassword, code } }),
   resetTotp: (token: string, currentPassword: string) =>
     request<TotpSetup>("/totp/reset", { token, json: { currentPassword } }),
-  confirmTotp: (token: string, code: string) => request<void>("/totp/confirm", { token, json: { code } }),
+  confirmTotp: (token: string, code: string) =>
+    request<void>("/totp/confirm", { token, json: { code } }),
 
   logout: (token: string) => request<void>("/logout", { token, method: "POST" }),
   logoutAll: (token: string) => request<void>("/logout-all", { token, method: "POST" }),

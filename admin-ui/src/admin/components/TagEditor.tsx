@@ -1,73 +1,83 @@
-import { Plus, X } from "lucide-react";
-import { type FC, useRef, useState } from "react";
+import { type FC, type KeyboardEvent, useState } from "react";
+import { Badge, Field, Mark } from "../../ui";
 import type { TagItem } from "../constants";
 
-interface TagEditorProps {
+export function parseTags(raw: string, existing: TagItem[]): TagItem[] {
+  const fresh: TagItem[] = [];
+  for (const title of raw.split(",").map((t) => t.trim())) {
+    if (!title) continue;
+    if (existing.some((t) => t.title === title) || fresh.some((t) => t.title === title)) continue;
+    fresh.push({ title, highlight: false });
+  }
+  return fresh;
+}
+
+type TagEditorProps = {
   items: TagItem[];
   onChange: (items: TagItem[]) => void;
-}
+};
 
 export const TagEditor: FC<TagEditorProps> = ({ items, onChange }) => {
   const [input, setInput] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  const commit = (raw: string) => {
-    const titles = raw.split(",").map((t) => t.trim()).filter(Boolean);
-    const fresh = titles.filter((t) => !items.some((i) => i.title === t));
-    if (fresh.length)
-      onChange([...items, ...fresh.map((t) => ({ title: t, highlight: false }))]);
+  const commit = () => {
+    const fresh = parseTags(input, items);
+    if (fresh.length) onChange([...items, ...fresh]);
+    setInput("");
   };
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      if (input.trim()) { commit(input); setInput(""); }
+      commit();
     } else if (e.key === "Backspace" && !input && items.length) {
       onChange(items.slice(0, -1));
     }
   };
 
+  const toggle = (index: number) =>
+    onChange(items.map((t, i) => (i === index ? { ...t, highlight: !t.highlight } : t)));
+
   return (
-    <div className="flex flex-wrap gap-2 items-center">
-      {items.map((item, i) => (
-        <span
-          key={`${item.title}-${i}`}
-          className={`adm-tag ${
-            item.highlight
-              ? "bg-tag-hl text-tag-hl-text border-tag-hl-border"
-              : "bg-tag-base text-tag-base-text border-tag-base-border"
-          }`}
-        >
-          <button
-            type="button"
-            title={item.highlight ? "Remove highlight" : "Highlight"}
-            className="bg-transparent border-none p-0 cursor-pointer text-inherit font-inherit text-[length:inherit]"
-            onClick={() => onChange(items.map((t, j) => j === i ? { ...t, highlight: !t.highlight } : t))}
-          >
-            {item.title}
-          </button>
-          <button
-            type="button"
-            className="adm-tag-x"
-            onClick={() => onChange(items.filter((_, j) => j !== i))}
-            aria-label={`Remove ${item.title}`}
-          >
-            <X size={9} />
-          </button>
-        </span>
-      ))}
-      <span className="adm-tag-add" onClick={() => inputRef.current?.focus()}>
-        <Plus size={11} />
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          onBlur={() => { if (input.trim()) { commit(input); setInput(""); } }}
-          placeholder="add tag"
-          className="adm-tag-input-inline"
-        />
-      </span>
+    <div className="flex flex-col gap-3">
+      {items.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          {items.map((item, i) => (
+            <li key={item.title}>
+              <Badge className="tag-chip">
+                <button
+                  type="button"
+                  className="tag-chip-label"
+                  aria-pressed={item.highlight}
+                  onClick={() => toggle(i)}
+                >
+                  {item.highlight ? <Mark>{item.title}</Mark> : item.title}
+                </button>
+                <button
+                  type="button"
+                  className="tag-chip-remove"
+                  aria-label={`remove ${item.title}`}
+                  onClick={() => onChange(items.filter((_, j) => j !== i))}
+                >
+                  ×
+                </button>
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Field
+        aria-label="add tag"
+        placeholder="add tag, then enter"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={commit}
+        enterKeyHint="done"
+        autoCapitalize="none"
+        autoCorrect="off"
+        hint="tap a tag to highlight it"
+      />
     </div>
   );
 };

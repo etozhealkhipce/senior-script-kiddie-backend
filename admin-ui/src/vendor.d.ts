@@ -1,7 +1,7 @@
 // Ambient type declarations for packages that ship no TypeScript types.
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare module "@editorjs/marker" {
+  // biome-ignore lint/suspicious/noExplicitAny: third-party editor tool has no typings
   const Marker: any;
   export default Marker;
 }

@@ -1,68 +1,84 @@
-import { Plus } from "lucide-react";
-import { type FC } from "react";
+import type { FC } from "react";
 import type { NoteApiData } from "../../types";
-import type { View } from "../constants";
+import { Button, Divider, PageHeader, Tabs, useConfirm } from "../../ui";
 import { EntryRow } from "../components/EntryRow";
 
-interface ListPageProps {
-  view: View;
-  visibleNotes: NoteApiData[];
+export type EntryFilter = "all" | "note" | "work";
+
+type ListPageProps = {
+  filter: EntryFilter;
+  onFilterChange: (filter: EntryFilter) => void;
+  notes: NoteApiData[];
+  counts: Record<EntryFilter, number>;
   loading: boolean;
   onNew: () => void;
   onEdit: (note: NoteApiData) => void;
   onDelete: (note: NoteApiData) => void;
-}
-
-const VIEW_TITLE: Record<string, string> = {
-  all: "All entries",
-  note: "Notes",
-  work: "Work",
 };
 
-export const ListPage: FC<ListPageProps> = ({ view, visibleNotes, loading, onNew, onEdit, onDelete }) => (
-  <div className="adm-main-inner">
-    <div className="adm-page-head">
-      <div>
-        <h1 className="adm-page-title">{VIEW_TITLE[view]}</h1>
-        <p className="adm-page-sub">
-          {loading
-            ? "Loading…"
-            : `${visibleNotes.length} ${visibleNotes.length === 1 ? "entry" : "entries"}`}
-        </p>
-      </div>
-      <button className="adm-btn adm-btn-primary" onClick={onNew}>
-        <Plus size={15} /> New entry
-      </button>
-    </div>
+export const ListPage: FC<ListPageProps> = ({
+  filter,
+  onFilterChange,
+  notes,
+  counts,
+  loading,
+  onNew,
+  onEdit,
+  onDelete,
+}) => {
+  const confirm = useConfirm();
 
-    {loading ? (
-      <div className="flex justify-center py-20">
-        <div className="adm-spinner" />
-      </div>
-    ) : visibleNotes.length === 0 ? (
-      <div className="text-center py-20">
-        <p className="text-muted text-sm font-medium mb-1">No entries here yet</p>
-        <p className="text-faint text-[13px] mb-5">Create your first entry to get started</p>
-        <button className="adm-btn adm-btn-ghost" onClick={onNew}>
-          <Plus size={15} /> New entry
-        </button>
-      </div>
-    ) : (
-      <div className="adm-entries">
-        <div className="adm-entries-head">
-          <span>Title</span>
-          <span>Type</span>
-          <span>Date</span>
+  const remove = async (note: NoteApiData) => {
+    const ok = await confirm({
+      title: `delete “${note.title}”?`,
+      body: "this can't be undone.",
+      confirmLabel: "delete",
+      danger: true,
+    });
+    if (ok) onDelete(note);
+  };
+
+  const count = counts[filter];
+
+  return (
+    <section className="page">
+      <PageHeader
+        title="entries"
+        subtitle={loading ? "loading…" : `${count} ${count === 1 ? "entry" : "entries"}`}
+        actions={
+          <Button variant="primary" onClick={onNew}>
+            + new
+          </Button>
+        }
+      />
+      <Tabs
+        label="filter entries"
+        value={filter}
+        onChange={onFilterChange}
+        items={[
+          { value: "all", label: "all", count: counts.all },
+          { value: "note", label: "notes", count: counts.note },
+          { value: "work", label: "work", count: counts.work },
+        ]}
+      />
+
+      {loading ? (
+        <p className="text-sm text-secondary">loading…</p>
+      ) : notes.length === 0 ? (
+        <div className="flex flex-col items-start gap-4 py-10">
+          <p className="text-sm text-secondary">nothing here yet</p>
+          <Button onClick={onNew}>+ new entry</Button>
         </div>
-        {visibleNotes.map((note) => (
-          <EntryRow
-            key={note.id}
-            note={note}
-            onEdit={() => onEdit(note)}
-            onDelete={(e) => { e.stopPropagation(); onDelete(note); }}
-          />
-        ))}
-      </div>
-    )}
-  </div>
-);
+      ) : (
+        <ul className="flex flex-col">
+          {notes.map((note, i) => (
+            <li key={note.id}>
+              {i > 0 && <Divider className="my-8" />}
+              <EntryRow note={note} onEdit={() => onEdit(note)} onDelete={() => remove(note)} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+};

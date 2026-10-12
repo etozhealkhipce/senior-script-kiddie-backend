@@ -1,0 +1,244 @@
+/* src/admin/admin.css — layout and page styles (filled by Tasks 4–7) */
+@layer components {
+  .app-noise {
+    @apply fixed inset-0 pointer-events-none mix-blend-multiply opacity-15 bg-[url(/noise.png)];
+    z-index: 0;
+  }
+
+  /* ── Shell: mobile first ─────────────────────────────── */
+  .app-shell {
+    @apply relative min-h-dvh;
+  }
+  .app-aside,
+  .app-nav {
+    @apply hidden;
+  }
+  .app-topbar {
+    @apply sticky top-0 z-30 flex items-center gap-3 bg-neutral-800/95 pb-2 backdrop-blur;
+    padding-top: calc(env(safe-area-inset-top) + 8px);
+    padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+  }
+  .app-topbar-title {
+    @apply min-w-0 flex-1 truncate text-sm lowercase text-secondary;
+  }
+  .app-main {
+    @apply relative z-10 mx-auto w-full max-w-3xl pt-6 pb-10;
+    padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+  }
+  .app-main--tabbar {
+    padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + 24px);
+  }
+  .app-tabbar {
+    @apply fixed inset-x-0 bottom-0 z-30 bg-neutral-800/95 backdrop-blur;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .app-tabbar-rule {
+    @apply block;
+  }
+  .app-tabbar-links {
+    @apply grid grid-cols-3 place-items-center;
+    padding-inline: max(0.5rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-right));
+    height: var(--tabbar-height);
+  }
+  .app-actionbar {
+    @apply sticky bottom-0 z-20 flex gap-2 bg-neutral-800/95 pt-3 backdrop-blur;
+    margin-inline: calc(-1 * max(1rem, env(safe-area-inset-left)))
+      calc(-1 * max(1rem, env(safe-area-inset-right)));
+    padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+    padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
+  }
+
+  /* ── Shell: desktop, same columns as sskd.tech ───────── */
+  @media (min-width: 1024px) {
+    .app-topbar,
+    .app-tabbar {
+      @apply hidden;
+    }
+    .app-shell {
+      @apply grid gap-10 px-8 py-12;
+      grid-template-columns: 10rem minmax(0, 1fr) 7rem;
+    }
+    .app-aside {
+      @apply sticky top-12 flex flex-col justify-between self-start;
+      height: calc(100dvh - 6rem);
+    }
+    .app-main,
+    .app-main--tabbar {
+      @apply mx-0 max-w-3xl p-0;
+      padding-inline: 0;
+    }
+    .app-nav {
+      @apply fixed right-8 bottom-12 z-20 flex flex-col items-end gap-2;
+    }
+    .app-actionbar {
+      @apply static bg-transparent p-0 backdrop-blur-none;
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+  }
+  @media (min-width: 1280px) {
+    .app-shell {
+      @apply gap-16 px-10 py-14;
+      grid-template-columns: 16rem minmax(0, 1fr) 16rem;
+    }
+    .app-aside {
+      @apply top-14;
+      height: calc(100dvh - 7rem);
+    }
+    .app-nav {
+      @apply right-14 bottom-14;
+    }
+  }
+
+  /* ── Pages ───────────────────────────────────────────── */
+  .page {
+    @apply flex flex-col gap-6;
+  }
+  .entry {
+    @apply flex flex-col gap-2;
+  }
+  .entry-open {
+    @apply flex min-w-0 items-center gap-2 text-left;
+    touch-action: manipulation;
+  }
+  .entry-bullet {
+    @apply inline-block size-1.5 shrink-0 bg-accent;
+  }
+  .entry-title {
+    @apply min-w-0 text-lg font-medium break-words [overflow-wrap:anywhere] hover:text-accent;
+  }
+  .entry-path {
+    @apply font-mono text-xs break-all text-neutral-500;
+  }
+  .entry-footer {
+    @apply mt-2 flex flex-wrap items-center justify-between gap-3;
+  }
+  @media (pointer: coarse) {
+    .entry-open {
+      min-height: 44px;
+    }
+  }
+
+  /* ── Auth screens ────────────────────────────────────── */
+  .auth-stage {
+    @apply relative grid min-h-dvh place-items-center;
+    padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+    padding-top: calc(env(safe-area-inset-top) + 16px);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+  }
+  .auth-panel {
+    @apply relative z-10 w-full max-w-sm;
+  }
+  .auth-or {
+    @apply grid items-center gap-3 text-xs text-neutral-500;
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  /* ── Editor ──────────────────────────────────────────── */
+  .editor-card {
+    @apply min-w-0 overflow-hidden rounded-lg border border-neutral-700 p-2 sm:p-4;
+  }
+  .tag-chip {
+    @apply inline-flex max-w-full min-w-0 items-center gap-1 py-0.5 pl-2 pr-0.5 text-sm;
+  }
+  .tag-chip-label {
+    @apply min-w-0 text-secondary break-all;
+    touch-action: manipulation;
+  }
+  .tag-chip-remove {
+    @apply grid size-7 place-items-center text-neutral-400 hover:text-white;
+    touch-action: manipulation;
+  }
+  @media (pointer: coarse) {
+    .tag-chip-label,
+    .tag-chip-remove {
+      min-height: 44px;
+    }
+    .tag-chip-remove {
+      min-width: 44px;
+    }
+  }
+
+  /* ── Images ──────────────────────────────────────────── */
+  .image-grid {
+    @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4;
+  }
+  .image-card {
+    @apply flex flex-col gap-2;
+  }
+  .image-thumb {
+    @apply block w-full overflow-hidden;
+    touch-action: manipulation;
+  }
+  .image-thumb img {
+    @apply aspect-square w-full object-cover;
+  }
+  .image-actions {
+    @apply flex flex-col gap-2;
+  }
+
+  /* ── Settings ────────────────────────────────────────── */
+  .settings-section {
+    @apply flex flex-col items-start gap-4;
+  }
+  .settings-section form,
+  .settings-section ul {
+    @apply w-full;
+  }
+  .settings-title {
+    @apply text-lg font-medium;
+  }
+  .settings-hint {
+    @apply text-sm text-secondary;
+  }
+  .passkey-row {
+    @apply flex items-center justify-between gap-3;
+  }
+}
+
+/* NOTE: biome.json disables noImportantStyles for this file — the !important below beats editor CSS.
+   ── block-forge overrides (unlayered — must win over editor CSS) */
+.bf-mx-auto {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.bf-min-h-screen {
+  min-height: 360px !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+}
+@media (min-width: 1024px) {
+  .bf-min-h-screen {
+    min-height: 520px !important;
+  }
+}
+.ce-block__content,
+.ce-toolbar__content {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.codex-editor__redactor {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  padding-bottom: 24px !important;
+}
+.ce-toolbar__actions {
+  right: 0 !important;
+}
+.codex-editor {
+  font-family: var(--font-sans) !important;
+}
+[role="menubar"] {
+  display: none !important;
+}
+.bf-my-6 {
+  margin-top: 0 !important;
+}
+.bf-m-8 {
+  margin-top: 0 !important;
+}

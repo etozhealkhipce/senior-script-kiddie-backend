@@ -1,5 +1,9 @@
-import { browserSupportsWebAuthn, startAuthentication, startRegistration } from "@simplewebauthn/browser";
-import { authApi, type AuthResult, type PasskeyView } from "./api";
+import {
+  browserSupportsWebAuthn,
+  startAuthentication,
+  startRegistration,
+} from "@simplewebauthn/browser";
+import { type AuthResult, authApi, type PasskeyView } from "./api";
 
 export const passkeysSupported = (): boolean => browserSupportsWebAuthn();
 

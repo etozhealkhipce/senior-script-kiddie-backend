@@ -1,13 +1,18 @@
-import { sileo } from "sileo";
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
-import { authApi, type AuthResult, type SessionKind } from "./auth/api";
 import type { NoteApiData, SubtitleItem } from "../types";
-import { TOKEN_KEY, EMPTY_FORM, type View, type NoteForm, type OutputData, type TagItem } from "./constants";
-import { slugify, formatDate, replaceBase64WithUploads } from "./utils";
+import { toast } from "../ui/toast";
+import { type AuthResult, authApi, type SessionKind } from "./auth/api";
+import {
+  EMPTY_FORM,
+  type NoteForm,
+  type OutputData,
+  type TagItem,
+  TOKEN_KEY,
+  type View,
+} from "./constants";
+import { replaceBase64WithUploads, slugify } from "./utils";
 
 export type { View, NoteForm, OutputData, TagItem };
-export { slugify, formatDate };
-
 export function useAdmin() {
   // ── Auth ────────────────────────────────────────────────────
   const [token, setToken] = useState("");
@@ -44,7 +49,7 @@ export function useAdmin() {
 
   const handleExpired = useCallback(() => {
     clearSession();
-    sileo.error({ title: "Session expired — sign in again" });
+    toast.error("Session expired — sign in again");
   }, [clearSession]);
 
   // Setup sessions live 15 minutes and are not persisted.
@@ -71,8 +76,10 @@ export function useAdmin() {
     const saved = localStorage.getItem(TOKEN_KEY);
     if (!saved) return;
     fetch("/api/admin/validate", { headers: { "x-admin-token": saved } }).then((r) => {
-      if (r.ok) { setToken(saved); setSessionKind("full"); }
-      else localStorage.removeItem(TOKEN_KEY);
+      if (r.ok) {
+        setToken(saved);
+        setSessionKind("full");
+      } else localStorage.removeItem(TOKEN_KEY);
     });
   }, []);
 
@@ -84,22 +91,31 @@ export function useAdmin() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setNotes(await res.json());
     } catch (e) {
-      sileo.error({ title: "Failed to load entries", description: String(e) });
-    } finally { setLoading(false); }
+      toast.error("Failed to load entries", String(e));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { if (authenticated) loadNotes(); }, [authenticated, loadNotes]);
+  useEffect(() => {
+    if (authenticated) loadNotes();
+  }, [authenticated, loadNotes]);
 
   // ── Images API ───────────────────────────────────────────────
   const loadImages = useCallback(async () => {
     try {
-      const res = await fetch("/api/uploads", { headers: ah() });
+      const res = await fetch("/api/uploads", {
+        headers: { "x-admin-token": token },
+      });
       if (res.ok) setUploadedImages((await res.json()).files ?? []);
-    } catch { /* ignore */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch {
+      /* ignore */
+    }
   }, [token]);
 
-  useEffect(() => { if (authenticated) loadImages(); }, [authenticated, loadImages]);
+  useEffect(() => {
+    if (authenticated) loadImages();
+  }, [authenticated, loadImages]);
 
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -113,10 +129,13 @@ export function useAdmin() {
         headers: ah(),
         body: fd,
       });
-      if (res.ok) { await loadImages(); sileo.success({ title: "Image uploaded" }); }
-      else sileo.error({ title: "Upload failed" });
-    } catch { sileo.error({ title: "Upload failed" }); }
-    finally {
+      if (res.ok) {
+        await loadImages();
+        toast.success("Image uploaded");
+      } else toast.error("Upload failed");
+    } catch {
+      toast.error("Upload failed");
+    } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -182,7 +201,7 @@ export function useAdmin() {
     const subtitle: SubtitleItem[] | null = form.tagItems.length ? form.tagItems : null;
     const payload = {
       contentType: form.contentType,
-      slug: form.slug,
+      slug: slugify(form.slug),
       title: form.title,
       preview: form.preview,
       tags,
@@ -198,61 +217,98 @@ export function useAdmin() {
         headers: { "Content-Type": "application/json", ...ah() },
         body: JSON.stringify(payload),
       });
-      if (res.status === 401) { handleExpired(); return; }
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        sileo.error({
-          title: Array.isArray(b.message)
-            ? b.message.join(", ")
-            : b.message ?? b.error ?? `HTTP ${res.status}`,
-        });
+      if (res.status === 401) {
+        handleExpired();
         return;
       }
-      sileo.success({ title: isEdit ? `${form.contentType} updated` : `${form.contentType} created` });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        toast.error(
+          Array.isArray(b.message)
+            ? b.message.join(", ")
+            : (b.message ?? b.error ?? `HTTP ${res.status}`),
+        );
+        return;
+      }
+      toast.success(isEdit ? `${form.contentType} updated` : `${form.contentType} created`);
       setShowForm(false);
       setForm(EMPTY_FORM);
       loadNotes();
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (note: NoteApiData) => {
-    if (!confirm(`Delete "${note.title}"?`)) return;
-    const res = await fetch(`/api/notes/${note.id}`, { method: "DELETE", headers: ah() });
-    if (res.status === 401) { handleExpired(); return; }
-    if (res.status !== 204 && !res.ok) {
-      const b = await res.json().catch(() => ({}));
-      sileo.error({ title: b.message ?? b.error ?? `HTTP ${res.status}` });
+    const res = await fetch(`/api/notes/${note.id}`, {
+      method: "DELETE",
+      headers: ah(),
+    });
+    if (res.status === 401) {
+      handleExpired();
       return;
     }
-    sileo.success({ title: "Entry deleted" });
+    if (res.status !== 204 && !res.ok) {
+      const b = await res.json().catch(() => ({}));
+      toast.error(b.message ?? b.error ?? `HTTP ${res.status}`);
+      return;
+    }
+    toast.success("Entry deleted");
     loadNotes();
   };
 
   // ── Derived ─────────────────────────────────────────────────
   const visibleNotes =
-    view === "all" ? notes :
-    view === "note" ? notes.filter((n) => n.contentType === "note") :
-    view === "work" ? notes.filter((n) => n.contentType === "work") :
-    [];
+    view === "all"
+      ? notes
+      : view === "note"
+        ? notes.filter((n) => n.contentType === "note")
+        : view === "work"
+          ? notes.filter((n) => n.contentType === "work")
+          : [];
 
   const notesCount = notes.filter((n) => n.contentType === "note").length;
   const workCount = notes.filter((n) => n.contentType === "work").length;
-  const slugFolder = form.contentType === "work" ? "work" : "notes";
 
   return {
     // auth
-    token, sessionKind, authenticated, applyAuth,
-    handleExpired, handleLogout, handleLogoutEverywhere,
+    token,
+    sessionKind,
+    authenticated,
+    applyAuth,
+    handleExpired,
+    handleLogout,
+    handleLogoutEverywhere,
     // notes
-    notes, loading, view, setView,
+    notes,
+    loading,
+    view,
+    setView,
     // form
-    editingId, showForm, form, setForm,
-    editorKey, initialEditorData, saving,
-    handleEditorChange, cancelForm, openCreate, openEdit, handleSave, handleDelete,
+    editingId,
+    showForm,
+    form,
+    setForm,
+    editorKey,
+    initialEditorData,
+    saving,
+    handleEditorChange,
+    cancelForm,
+    openCreate,
+    openEdit,
+    handleSave,
+    handleDelete,
     // images
-    uploadedImages, uploading, copied, fileInputRef,
-    handleUpload, handleDeleteImage, copyUrl,
+    uploadedImages,
+    uploading,
+    copied,
+    fileInputRef,
+    handleUpload,
+    handleDeleteImage,
+    copyUrl,
     // derived
-    visibleNotes, notesCount, workCount, slugFolder,
+    visibleNotes,
+    notesCount,
+    workCount,
   };
 }

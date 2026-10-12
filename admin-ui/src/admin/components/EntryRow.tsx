@@ -1,49 +1,43 @@
-import { Trash2 } from "lucide-react";
-import { type FC } from "react";
+import type { FC } from "react";
 import type { NoteApiData } from "../../types";
+import { Badge, Button, type TagItem, Tags } from "../../ui";
 import { formatDate } from "../utils";
 
-interface EntryRowProps {
+type EntryRowProps = {
   note: NoteApiData;
   onEdit: () => void;
-  onDelete: (e: React.MouseEvent) => void;
-}
+  onDelete: () => void;
+};
 
-export const EntryRow: FC<EntryRowProps> = ({ note, onEdit, onDelete }) => (
-  <div className="adm-entry-row" onClick={onEdit}>
-    <div className="adm-entry-main">
-      <p className="adm-entry-title">{note.title}</p>
-      <p className="adm-entry-slug">
-        /{note.contentType === "work" ? "work" : "notes"}/{note.slug}
-      </p>
-      {note.tags && note.tags.length > 0 && (
-        <div className="adm-entry-tags">
-          {note.tags.slice(0, 4).map((tag) => (
-            <span key={tag} className="adm-tag bg-tag-base text-tag-base-text border-tag-base-border">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
+const tagsOf = (note: NoteApiData): TagItem[] =>
+  note.subtitle?.length
+    ? note.subtitle
+    : (note.tags ?? []).map((title) => ({ title, highlight: false }));
 
-    <div className="adm-entry-type">
-      <span
-        className={`adm-type-badge ${
-          note.contentType === "work"
-            ? "bg-badge-work text-badge-work-text"
-            : "bg-badge-note text-badge-note-text"
-        }`}
-      >
-        {note.contentType ?? "note"}
-      </span>
-    </div>
-
-    <div className="adm-entry-when">
-      <span className="adm-entry-date">{formatDate(note.createdAt)}</span>
-      <button onClick={onDelete} className="adm-delete-btn" title="Delete">
-        <Trash2 size={14} />
+export const EntryRow: FC<EntryRowProps> = ({ note, onEdit, onDelete }) => {
+  const folder = note.contentType === "work" ? "work" : "notes";
+  return (
+    <article className="entry">
+      <button type="button" className="entry-open" onClick={onEdit}>
+        <span className="entry-bullet" aria-hidden="true" />
+        <span className="entry-title">{note.title}</span>
       </button>
-    </div>
-  </div>
-);
+      <Tags items={tagsOf(note)} />
+      {note.preview && <p className="text-sm text-secondary">{note.preview}</p>}
+      <p className="entry-path">
+        /{folder}/{note.slug}
+      </p>
+      <div className="entry-footer">
+        <span className="flex items-center gap-3">
+          <Badge>{note.contentType || "note"}</Badge>
+          <time className="text-xs text-neutral-500" dateTime={note.createdAt}>
+            {formatDate(note.createdAt)}
+          </time>
+        </span>
+        <Button variant="link-danger" onClick={onDelete}>
+          delete
+        </Button>
+      </div>
+    </article>
+  );
+};

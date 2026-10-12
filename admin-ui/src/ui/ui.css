@@ -1,0 +1,185 @@
+/* src/ui/ui.css — UI kit styles (filled by Tasks 2–3) */
+@layer components {
+  /* drawably ships Inter; the site uses Montserrat */
+  .drawably-host,
+  .drawably-button {
+    font-family: var(--font-sans);
+  }
+
+  /* ── Buttons ─────────────────────────────────────────── */
+  .ui-button {
+    @apply gap-2 px-4 py-2 text-sm font-medium lowercase;
+    touch-action: manipulation;
+  }
+  .ui-button-label {
+    display: inline-flex;
+    align-items: center;
+    gap: inherit;
+  }
+  .ui-button--block {
+    @apply flex w-full;
+  }
+  .ui-link {
+    @apply inline-flex items-center gap-1 text-sm text-neutral-400 underline-offset-4 transition-colors hover:text-neutral-200 hover:underline disabled:opacity-50;
+    touch-action: manipulation;
+  }
+  .ui-link--danger:hover {
+    color: var(--drawably-error);
+  }
+
+  /* ── Fields ──────────────────────────────────────────── */
+  .ui-field {
+    @apply flex min-w-0 flex-col gap-2;
+  }
+  .ui-label {
+    @apply text-xs font-medium lowercase text-neutral-400;
+  }
+  .ui-field-row {
+    @apply flex min-w-0 items-center gap-2;
+  }
+  .ui-prefix {
+    @apply shrink-0 font-mono text-sm text-neutral-500;
+  }
+  .ui-input {
+    @apply block w-full min-w-0;
+  }
+  /* 16px minimum: iOS Safari zooms into smaller fields on focus */
+  .ui-input :is(input, textarea) {
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  .ui-input--large input {
+    @apply font-medium;
+    font-size: 1.75rem;
+  }
+  .ui-input :is(input, textarea)::placeholder {
+    @apply text-neutral-500;
+  }
+  .ui-hint {
+    @apply text-xs text-neutral-500;
+  }
+  .ui-error {
+    @apply text-xs;
+    color: var(--drawably-error);
+  }
+
+  /* ── Containers & text ───────────────────────────────── */
+  .ui-card {
+    @apply block;
+  }
+  .ui-divider {
+    @apply h-px w-full border-0 bg-linear-to-r from-transparent via-accent/25 to-transparent;
+  }
+  .ui-mark {
+    @apply bg-accent/30 text-white;
+  }
+  .ui-badge {
+    @apply text-xs lowercase text-neutral-500;
+  }
+  .ui-tags {
+    @apply text-sm text-secondary break-words [overflow-wrap:anywhere];
+  }
+  .ui-page-header {
+    @apply flex flex-wrap items-end justify-between gap-4;
+  }
+
+  /* ── Tabs & navigation ───────────────────────────────── */
+  .ui-tabs {
+    @apply flex flex-wrap items-center;
+  }
+  .ui-tab-sep {
+    @apply select-none text-sm text-neutral-600;
+  }
+  .ui-tab {
+    @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm lowercase text-neutral-400 transition-colors hover:text-neutral-300;
+    touch-action: manipulation;
+  }
+  .ui-tab[aria-selected="true"] {
+    @apply text-accent;
+  }
+  .ui-tab-count,
+  .ui-nav-count {
+    @apply text-xs text-neutral-500;
+  }
+  .ui-nav-link {
+    @apply inline-flex items-center gap-2 py-1 text-sm lowercase text-neutral-400 transition-colors hover:text-neutral-300;
+    touch-action: manipulation;
+  }
+  .ui-nav-link--active {
+    @apply text-accent;
+  }
+
+  /* ── Touch: 44px targets ─────────────────────────────── */
+  @media (pointer: coarse) {
+    .ui-button,
+    .ui-link,
+    .ui-tab,
+    .ui-nav-link {
+      min-height: 44px;
+    }
+    .ui-button {
+      @apply px-5;
+    }
+    .ui-input :is(input, textarea) {
+      min-height: 44px;
+    }
+  }
+
+  /* ── Toasts ──────────────────────────────────────────── */
+  .ui-toaster {
+    @apply pointer-events-none fixed z-50 flex flex-col gap-2;
+    left: max(1rem, env(safe-area-inset-left));
+    right: max(1rem, env(safe-area-inset-right));
+    top: calc(env(safe-area-inset-top) + 12px);
+  }
+  @media (min-width: 1024px) {
+    .ui-toaster {
+      @apply left-auto right-10 w-96;
+      top: 3.5rem;
+      bottom: auto;
+    }
+  }
+  .ui-toast {
+    @apply pointer-events-auto flex items-start gap-3 rounded-md border border-neutral-700 bg-neutral-900/95 px-4 py-3 text-sm;
+  }
+  .ui-toast [data-tag] {
+    @apply shrink-0 px-1.5 py-0.5 text-xs lowercase;
+  }
+  .ui-toast--error [data-tag] {
+    color: var(--drawably-error);
+  }
+  .ui-toast--success [data-tag] {
+    color: var(--drawably-success);
+  }
+  .ui-toast-body {
+    @apply flex min-w-0 flex-1 flex-col gap-1 break-words;
+  }
+  .ui-toast-desc {
+    @apply text-xs text-neutral-400;
+  }
+  .ui-toast-close {
+    @apply -my-2 -mr-2 grid size-11 shrink-0 place-items-center text-lg text-neutral-400 hover:text-white;
+  }
+
+  /* ── Modal: bottom sheet on phones, centred from sm ─────── */
+  .ui-modal {
+    @apply m-0 w-full max-w-none bg-transparent p-0 text-white;
+    margin-top: auto;
+    padding: 0 max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 16px)
+      max(16px, env(safe-area-inset-left));
+  }
+  .ui-modal::backdrop {
+    background: rgb(23 23 23 / 0.7);
+  }
+  @media (min-width: 640px) {
+    .ui-modal {
+      @apply m-auto max-w-md p-0;
+    }
+  }
+  .ui-modal-card {
+    @apply rounded-lg border border-neutral-700 bg-neutral-800 p-5;
+  }
+  .ui-modal-actions {
+    @apply mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end;
+  }
+}

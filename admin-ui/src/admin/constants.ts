@@ -3,11 +3,20 @@ import Marker from "@editorjs/marker";
 export const TOKEN_KEY = "admin_token";
 
 export const EDITOR_TOOLS: string[] = [
-  "paragraph", "list", "table", "divider", "quote", "code", "imageSingle", "imageGallery",
+  "paragraph",
+  "list",
+  "table",
+  "divider",
+  "quote",
+  "code",
+  "imageSingle",
+  "imageGallery",
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const EDITOR_INLINE_TOOLS: Record<string, any> = { marker: { class: Marker } };
+// biome-ignore lint/suspicious/noExplicitAny: third-party editor tool typings
+export const EDITOR_INLINE_TOOLS: Record<string, any> = {
+  marker: { class: Marker },
+};
 
 export type View = "all" | "note" | "work" | "images" | "settings";
 

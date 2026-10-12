@@ -1,58 +1,73 @@
-import { sileo } from "sileo";
 import { type FC, type FormEvent, useCallback, useEffect, useState } from "react";
-import { ApiError, authApi, describeAuthError, type PasskeyView, type TotpSetup } from "../auth/api";
+import { Button, Divider, Field, toast, useConfirm } from "../../ui";
+import {
+  ApiError,
+  authApi,
+  describeAuthError,
+  type PasskeyView,
+  type TotpSetup,
+} from "../auth/api";
 import { defaultPasskeyName, passkeysSupported, registerPasskey } from "../auth/passkeys";
 import { TotpQr } from "../components/TotpQr";
 import { formatDate } from "../utils";
 
-interface SettingsPageProps {
+type SettingsPageProps = {
   token: string;
   onExpired: () => void;
   onLogoutEverywhere: () => void;
-}
-
-const sectionTitle = "font-semibold text-[14.5px] text-content mb-1";
-const sectionHint = "text-[12.5px] text-faint mb-3";
-const label = "text-xs text-muted font-medium mb-[7px] block";
+};
 
 export const SettingsPage: FC<SettingsPageProps> = ({ token, onExpired, onLogoutEverywhere }) => {
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [passkeys, setPasskeys] = useState<PasskeyView[]>([]);
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
   const [passwordCode, setPasswordCode] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [pendingTotp, setPendingTotp] = useState<TotpSetup | null>(null);
   const [totpCode, setTotpCode] = useState("");
 
-  const guarded = useCallback(async (action: () => Promise<void>) => {
-    setBusy(true);
-    try {
-      await action();
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) onExpired();
-      else sileo.error({ title: describeAuthError(e) });
-    } finally {
-      setBusy(false);
-    }
-  }, [onExpired]);
+  const guarded = useCallback(
+    async (action: () => Promise<void>) => {
+      setBusy(true);
+      try {
+        await action();
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) onExpired();
+        else toast.error(describeAuthError(e));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [onExpired],
+  );
 
-  const loadPasskeys = useCallback(
+  const reload = useCallback(
     () => guarded(async () => setPasskeys(await authApi.listPasskeys(token))),
     [guarded, token],
   );
 
-  useEffect(() => { loadPasskeys(); }, [loadPasskeys]);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
-  const addPasskey = () => guarded(async () => {
-    await registerPasskey(token, defaultPasskeyName());
-    sileo.success({ title: "Passkey added" });
-    setPasskeys(await authApi.listPasskeys(token));
-  });
-
-  const removePasskey = (p: PasskeyView) => {
-    if (!confirm(`Remove passkey "${p.name}"?`)) return;
+  const addPasskey = () =>
     guarded(async () => {
+      await registerPasskey(token, defaultPasskeyName());
+      toast.success("Passkey added");
+      setPasskeys(await authApi.listPasskeys(token));
+    });
+
+  const removePasskey = async (p: PasskeyView) => {
+    const ok = await confirm({
+      title: `remove “${p.name}”?`,
+      body: "this device will need the password and code again.",
+      confirmLabel: "remove",
+      danger: true,
+    });
+    if (!ok) return;
+    await guarded(async () => {
       await authApi.deletePasskey(token, p.id);
       setPasskeys(await authApi.listPasskeys(token));
     });
@@ -60,17 +75,22 @@ export const SettingsPage: FC<SettingsPageProps> = ({ token, onExpired, onLogout
 
   const changePassword = (e: FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) { sileo.error({ title: "Passwords do not match" }); return; }
-    guarded(async () => {
+    if (newPassword !== repeatPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    void guarded(async () => {
       await authApi.changePassword(token, newPassword, passwordCode);
-      setNewPassword(""); setConfirmPassword(""); setPasswordCode("");
-      sileo.success({ title: "Password changed" });
+      setNewPassword("");
+      setRepeatPassword("");
+      setPasswordCode("");
+      toast.success("Password changed");
     });
   };
 
   const startTotpReset = (e: FormEvent) => {
     e.preventDefault();
-    guarded(async () => {
+    void guarded(async () => {
       setPendingTotp(await authApi.resetTotp(token, currentPassword));
       setCurrentPassword("");
     });
@@ -78,95 +98,156 @@ export const SettingsPage: FC<SettingsPageProps> = ({ token, onExpired, onLogout
 
   const confirmTotp = (e: FormEvent) => {
     e.preventDefault();
-    guarded(async () => {
+    void guarded(async () => {
       await authApi.confirmTotp(token, totpCode);
-      setPendingTotp(null); setTotpCode("");
-      sileo.success({ title: "Authenticator updated" });
+      setPendingTotp(null);
+      setTotpCode("");
+      toast.success("Authenticator updated");
     });
   };
 
-  return (
-    <div className="adm-main-inner max-w-[560px]">
-      <div className="adm-page-head">
-        <h1 className="adm-page-title">Settings</h1>
-      </div>
+  const signOutEverywhere = async () => {
+    const ok = await confirm({
+      title: "sign out everywhere?",
+      body: "every device, including this one.",
+      confirmLabel: "sign out",
+      danger: true,
+    });
+    if (ok) onLogoutEverywhere();
+  };
 
-      <section className="mb-8">
-        <h2 className={sectionTitle}>Face ID / Touch ID</h2>
-        <p className={sectionHint}>Passkeys sync through iCloud Keychain, so one is usually enough for all your Apple devices.</p>
-        {passkeys.length === 0 && <p className="text-[13px] text-faint mb-3">No passkeys yet.</p>}
-        {passkeys.map((p) => (
-          <div key={p.id} className="flex items-center justify-between gap-3 py-2 border-b border-line-soft">
-            <div>
-              <p className="text-[13.5px] text-content">{p.name}</p>
-              <p className="text-[12px] text-faint">
-                added {formatDate(p.createdAt)}
-                {p.lastUsedAt && ` · last used ${formatDate(p.lastUsedAt)}`}
-              </p>
-            </div>
-            <button className="adm-btn adm-btn-ghost" disabled={busy} onClick={() => removePasskey(p)}>Remove</button>
-          </div>
-        ))}
+  return (
+    <section className="page">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-3xl font-medium lg:text-5xl">settings</h1>
+        <p className="text-sm text-secondary">sign-in methods and sessions</p>
+      </header>
+
+      <section className="settings-section">
+        <h2 className="settings-title">face id / touch id</h2>
+        <p className="settings-hint">
+          passkeys sync through icloud keychain — one is usually enough for every apple device.
+        </p>
+        {passkeys.length === 0 ? (
+          <p className="text-sm text-neutral-500">no passkeys yet</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {passkeys.map((p) => (
+              <li key={p.id} className="passkey-row">
+                <div className="min-w-0">
+                  <p className="break-words text-sm">{p.name}</p>
+                  <p className="text-xs text-neutral-500">
+                    added {formatDate(p.createdAt)}
+                    {p.lastUsedAt && ` · last used ${formatDate(p.lastUsedAt)}`}
+                  </p>
+                </div>
+                <Button variant="link-danger" disabled={busy} onClick={() => void removePasskey(p)}>
+                  remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
         {passkeysSupported() && (
-          <button className="adm-btn adm-btn-primary mt-3" disabled={busy} onClick={addPasskey}>
-            Add passkey on this device
-          </button>
+          <Button variant="primary" disabled={busy} onClick={() => void addPasskey()}>
+            add passkey on this device
+          </Button>
         )}
       </section>
 
-      <section className="mb-8">
-        <h2 className={sectionTitle}>Password</h2>
-        <p className={sectionHint}>Needs a code from your authenticator app.</p>
-        <form onSubmit={changePassword}>
-          <label className={label}>New password</label>
-          <input type="password" autoComplete="new-password" value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)} className="adm-token-input mb-3" />
-          <label className={label}>Repeat password</label>
-          <input type="password" autoComplete="new-password" value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)} className="adm-token-input mb-3" />
-          <label className={label}>Authenticator code</label>
-          <input inputMode="numeric" autoComplete="one-time-code" value={passwordCode}
-            onChange={(e) => setPasswordCode(e.target.value)} className="adm-token-input mb-3" />
-          <button type="submit" className="adm-btn adm-btn-primary"
-            disabled={busy || !newPassword || !passwordCode}>Change password</button>
+      <Divider />
+
+      <section className="settings-section">
+        <h2 className="settings-title">password</h2>
+        <p className="settings-hint">needs a code from your authenticator app.</p>
+        <form onSubmit={changePassword} className="flex flex-col gap-4">
+          <Field
+            label="new password"
+            type="password"
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <Field
+            label="repeat password"
+            type="password"
+            autoComplete="new-password"
+            value={repeatPassword}
+            onChange={(e) => setRepeatPassword(e.target.value)}
+          />
+          <Field
+            label="authenticator code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={passwordCode}
+            onChange={(e) => setPasswordCode(e.target.value)}
+          />
+          <Button type="submit" disabled={busy || !newPassword || !passwordCode}>
+            change password
+          </Button>
         </form>
       </section>
 
-      <section className="mb-8">
-        <h2 className={sectionTitle}>Authenticator app</h2>
+      <Divider />
+
+      <section className="settings-section">
+        <h2 className="settings-title">authenticator app</h2>
         {pendingTotp ? (
-          <form onSubmit={confirmTotp}>
-            <p className={sectionHint}>Scan the new code, then enter a code from it. Until you confirm, the old app keeps working.</p>
+          <form onSubmit={confirmTotp} className="flex flex-col gap-4">
+            <p className="settings-hint">
+              scan the new code, then enter a code from it. the old app works until you confirm.
+            </p>
             <TotpQr totp={pendingTotp} />
-            <label className={label}>Code from the new app</label>
-            <input inputMode="numeric" autoComplete="one-time-code" value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value)} className="adm-token-input mb-3" />
-            <div className="flex gap-2">
-              <button type="submit" className="adm-btn adm-btn-primary" disabled={busy || !totpCode}>Confirm</button>
-              <button type="button" className="adm-btn adm-btn-ghost" onClick={() => setPendingTotp(null)}>Cancel</button>
+            <Field
+              label="code from the new app"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value)}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" variant="primary" disabled={busy || !totpCode}>
+                confirm
+              </Button>
+              <Button
+                onClick={() => {
+                  setPendingTotp(null);
+                  setTotpCode("");
+                }}
+                disabled={busy}
+              >
+                cancel
+              </Button>
             </div>
           </form>
         ) : (
-          <form onSubmit={startTotpReset}>
-            <p className={sectionHint}>Lost the app or moving to a new one? Confirm with your password.</p>
-            <label className={label}>Current password</label>
-            <input type="password" autoComplete="current-password" value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)} className="adm-token-input mb-3" />
-            <button type="submit" className="adm-btn adm-btn-primary" disabled={busy || !currentPassword}>
-              Set up a new authenticator
-            </button>
+          <form onSubmit={startTotpReset} className="flex flex-col gap-4">
+            <p className="settings-hint">
+              lost the app or moving to a new one? confirm with your password.
+            </p>
+            <Field
+              label="current password"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+            <Button type="submit" disabled={busy || !currentPassword}>
+              set up a new authenticator
+            </Button>
           </form>
         )}
       </section>
 
-      <section className="mb-8">
-        <h2 className={sectionTitle}>Sessions</h2>
-        <p className={sectionHint}>Signs out every device, including this one.</p>
-        <button className="adm-btn adm-btn-ghost" disabled={busy}
-          onClick={() => { if (confirm("Sign out on all devices?")) onLogoutEverywhere(); }}>
-          Sign out everywhere
-        </button>
+      <Divider />
+
+      <section className="settings-section">
+        <h2 className="settings-title">sessions</h2>
+        <p className="settings-hint">signs out every device, including this one.</p>
+        <Button variant="danger" disabled={busy} onClick={() => void signOutEverywhere()}>
+          sign out everywhere
+        </Button>
       </section>
-    </div>
+    </section>
   );
 };
