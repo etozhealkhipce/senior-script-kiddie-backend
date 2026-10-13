@@ -22,12 +22,6 @@
       }
     }
   },
-  "overrides": [
-    {
-      "includes": ["src/admin/admin.css"],
-      "linter": { "rules": { "complexity": { "noImportantStyles": "off" } } }
-    }
-  ],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

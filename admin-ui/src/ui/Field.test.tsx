@@ -4,15 +4,12 @@ import { Field } from "./Field";
 import { TextArea } from "./TextArea";
 
 describe("Field", () => {
-  it("labels a static drawably input", () => {
+  it("labels a plain input", () => {
     render(<Field label="password" type="password" />);
     const input = screen.getByLabelText("password");
     expect(input.tagName).toBe("INPUT");
     expect(input.getAttribute("type")).toBe("password");
-    const wrap = input.parentElement as HTMLElement;
-    expect(wrap.dataset.drawably).toBe("input");
-    expect(wrap.dataset.boil).toBe("0");
-    expect(wrap.className).toContain("ui-input");
+    expect(input.className).toContain("ui-input");
   });
 
   it("describes the input with hint and error and marks it invalid", () => {
@@ -26,14 +23,14 @@ describe("Field", () => {
       "Invalid code",
     ]);
     expect(input.getAttribute("aria-invalid")).toBe("true");
-    expect((input.parentElement as HTMLElement).dataset.stroke).toBe("var(--drawably-error)");
+    expect((input.parentElement as HTMLElement).className).toContain("ui-field-row--error");
   });
 
   it("renders a prefix and a large variant", () => {
     render(<Field label="slug" prefix="/notes/" large />);
     expect(screen.getByText("/notes/")).toBeTruthy();
     expect((screen.getByLabelText("slug").parentElement as HTMLElement).className).toContain(
-      "ui-input--large",
+      "ui-field-row--large",
     );
   });
 
@@ -41,6 +38,6 @@ describe("Field", () => {
     render(<TextArea label="preview" rows={3} />);
     const area = screen.getByLabelText("preview");
     expect(area.tagName).toBe("TEXTAREA");
-    expect((area.parentElement as HTMLElement).dataset.boil).toBe("0");
+    expect(area.className).toContain("ui-textarea");
   });
 });

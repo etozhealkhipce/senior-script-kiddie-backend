@@ -46,7 +46,6 @@ describe("LoginPage", () => {
       fireEvent.click(button);
     });
     expect(screen.getByRole("alert").textContent).toBe("Face ID was cancelled or timed out");
-    expect(button.dataset.state).toBe("idle");
     expect(button).toHaveProperty("disabled", false);
   });
 

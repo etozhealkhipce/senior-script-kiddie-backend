@@ -7,7 +7,6 @@
 @import "@fontsource/inter/latin.css";
 @import "@fontsource/inter/cyrillic.css";
 @import "tailwindcss";
-@import "drawably/style.css" layer(vendor);
 @import "@block-forge/block-forge-editor/dist/index.css" layer(vendor);
 @import "./ui/ui.css";
 @import "./admin/admin.css";
@@ -27,12 +26,6 @@
 
 :root {
   color-scheme: dark;
-  --drawably-stroke: #d8d8d8;
-  --drawably-fill: #ffec99;
-  --drawably-paper: #262626;
-  --drawably-error: #f87171;
-  --drawably-success: #86efac;
-  --drawably-width: 2px;
   --tabbar-height: 64px;
 }
 

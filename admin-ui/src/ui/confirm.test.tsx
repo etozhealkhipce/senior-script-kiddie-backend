@@ -37,7 +37,7 @@ describe("useConfirm", () => {
     fireEvent.click(screen.getByRole("button", { name: "ask" }));
     expect(screen.getByRole("heading", { name: "delete entry?" })).toBeTruthy();
     const confirmButton = screen.getByRole("button", { name: "delete" });
-    expect(confirmButton.dataset.tone).toBe("danger");
+    expect(confirmButton.className).toContain("ui-button--danger");
     await act(async () => {
       fireEvent.click(confirmButton);
     });

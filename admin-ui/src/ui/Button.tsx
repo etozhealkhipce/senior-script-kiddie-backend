@@ -1,7 +1,5 @@
-import { DrawablyButton } from "drawably/react";
 import type { ComponentProps } from "react";
 import { cn } from "./cn";
-import { STILL } from "./motion";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "link" | "link-danger";
 
@@ -39,18 +37,15 @@ export function Button({
   }
 
   return (
-    <DrawablyButton
-      key={variant}
+    <button
+      type="button"
       {...rest}
-      variant={variant === "primary" ? "solid" : "outline"}
-      tone={variant === "danger" ? "danger" : undefined}
-      state={loading ? "loading" : "idle"}
-      boil={STILL}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cn("ui-button", block && "ui-button--block", className)}
+      className={cn("ui-button", `ui-button--${variant}`, block && "ui-button--block", className)}
     >
-      <span className="ui-button-label">{children}</span>
-    </DrawablyButton>
+      {loading && <span className="ui-spinner animate-spin" aria-hidden="true" />}
+      {children}
+    </button>
   );
 }

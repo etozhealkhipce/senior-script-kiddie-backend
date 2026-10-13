@@ -112,6 +112,9 @@ export const EditorPage: FC<EditorPageProps> = ({
         <BlockForgeEditor
           key={editorKey}
           id={`editor-${editorKey}`}
+          theme="dark"
+          layout="embedded"
+          showMenubar={false}
           enabledTools={EDITOR_TOOLS}
           tools={EDITOR_INLINE_TOOLS}
           initialData={initialEditorData ?? undefined}

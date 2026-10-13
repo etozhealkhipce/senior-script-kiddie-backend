@@ -8,7 +8,6 @@ export { Field } from "./Field";
 export { Logo } from "./Logo";
 export { Mark } from "./Mark";
 export { Modal } from "./Modal";
-export { STILL } from "./motion";
 export { NavLink } from "./NavLink";
 export { PageHeader } from "./PageHeader";
 export { type TabItem, Tabs } from "./Tabs";

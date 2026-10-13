@@ -47,6 +47,11 @@
     padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
     padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
   }
+  /* phones: EditorJS opens its block menu as a bottom sheet inside the editor
+     (z-index 1); drop the sticky bar under it while a menu is open */
+  .page:has(.ce-popover--opened) .app-actionbar {
+    z-index: 0;
+  }
 
   /* ── Shell: desktop, same columns as sskd.tech ───────── */
   @media (min-width: 1024px) {
@@ -135,8 +140,9 @@
   }
 
   /* ── Editor ──────────────────────────────────────────── */
+  /* no overflow clipping: the editor's + / ⋮⋮ popovers open past the frame */
   .editor-card {
-    @apply min-w-0 overflow-hidden rounded-lg border border-neutral-700 p-2 sm:p-4;
+    @apply min-w-0 rounded-lg border border-neutral-700 px-2 py-1 sm:px-3;
   }
   .tag-chip {
     @apply inline-flex max-w-full min-w-0 items-center gap-1 py-0.5 pl-2 pr-0.5 text-sm;
@@ -196,49 +202,31 @@
   }
 }
 
-/* NOTE: biome.json disables noImportantStyles for this file — the !important below beats editor CSS.
-   ── block-forge overrides (unlayered — must win over editor CSS) */
-.bf-mx-auto {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-.bf-min-h-screen {
-  min-height: 360px !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  background-color: transparent !important;
-}
-@media (min-width: 1024px) {
-  .bf-min-h-screen {
-    min-height: 520px !important;
+/* ── block-forge editor palette ───────────────────────────
+   The editor runs with theme="dark" and sets .bf-dark on its root and on its
+   portaled menus/drawers. Its tokens are HSL channels; these are the site's
+   colours (neutral-800 page, neutral-700 lines, #ffec99 accent). Layered above
+   the vendor layer, so they win without !important. */
+@layer components {
+  .bf-dark {
+    --background: 0 0% 14.9%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 14.9%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 14.9%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 49 100% 80%;
+    --primary-foreground: 0 0% 14.9%;
+    --secondary: 0 0% 25.1%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 25.1%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 25.1%;
+    --input: 0 0% 32.2%;
+    --ring: 49 100% 80%;
   }
-}
-.ce-block__content,
-.ce-toolbar__content {
-  max-width: 100% !important;
-  width: 100% !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-.codex-editor__redactor {
-  padding-left: 12px !important;
-  padding-right: 12px !important;
-  padding-bottom: 24px !important;
-}
-.ce-toolbar__actions {
-  right: 0 !important;
-}
-.codex-editor {
-  font-family: var(--font-sans) !important;
-}
-[role="menubar"] {
-  display: none !important;
-}
-.bf-my-6 {
-  margin-top: 0 !important;
-}
-.bf-m-8 {
-  margin-top: 0 !important;
 }

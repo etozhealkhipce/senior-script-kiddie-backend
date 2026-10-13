@@ -1,30 +1,35 @@
 /* src/ui/ui.css — UI kit styles (filled by Tasks 2–3) */
 @layer components {
-  /* drawably ships Inter; the site uses Montserrat */
-  .drawably-host,
-  .drawably-button {
-    font-family: var(--font-sans);
-  }
-
   /* ── Buttons ─────────────────────────────────────────── */
   .ui-button {
-    @apply gap-2 px-4 py-2 text-sm font-medium lowercase;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-800 disabled:cursor-not-allowed disabled:opacity-50;
     touch-action: manipulation;
   }
-  .ui-button-label {
-    display: inline-flex;
-    align-items: center;
-    gap: inherit;
+  .ui-button--primary {
+    @apply bg-accent text-neutral-800 hover:bg-accent/90;
+  }
+  .ui-button--secondary,
+  .ui-button--danger {
+    @apply border bg-transparent;
+  }
+  .ui-button--secondary {
+    @apply border-neutral-500 text-neutral-300 hover:border-neutral-400 hover:bg-neutral-700 hover:text-white;
+  }
+  .ui-button--danger {
+    @apply border-red-400/60 text-red-300 hover:border-red-400 hover:bg-red-500/10 hover:text-red-200;
   }
   .ui-button--block {
     @apply flex w-full;
+  }
+  .ui-spinner {
+    @apply inline-block size-3.5 rounded-full border-2 border-current border-t-transparent;
   }
   .ui-link {
     @apply inline-flex items-center gap-1 text-sm text-neutral-400 underline-offset-4 transition-colors hover:text-neutral-200 hover:underline disabled:opacity-50;
     touch-action: manipulation;
   }
   .ui-link--danger:hover {
-    color: var(--drawably-error);
+    color: #f87171;
   }
 
   /* ── Fields ──────────────────────────────────────────── */
@@ -35,32 +40,48 @@
     @apply text-xs font-medium lowercase text-neutral-400;
   }
   .ui-field-row {
-    @apply flex min-w-0 items-center gap-2;
+    @apply flex min-w-0 items-center rounded-md border border-neutral-600 bg-transparent px-3 transition-colors hover:border-neutral-500 focus-within:border-accent hover:focus-within:border-accent;
+  }
+  .ui-field-row--error,
+  .ui-field-row--error:hover {
+    @apply border-red-400;
+  }
+  .ui-field-row--large {
+    @apply rounded-none border-0 border-b border-neutral-700 px-0 hover:border-neutral-700 focus-within:border-accent hover:focus-within:border-accent;
+  }
+  .ui-field-row--large.ui-field-row--error {
+    @apply border-red-400;
   }
   .ui-prefix {
-    @apply shrink-0 font-mono text-sm text-neutral-500;
-  }
-  .ui-input {
-    @apply block w-full min-w-0;
+    @apply shrink-0 pr-1 font-mono text-sm text-neutral-500;
   }
   /* 16px minimum: iOS Safari zooms into smaller fields on focus */
-  .ui-input :is(input, textarea) {
-    font-size: 16px;
+  .ui-input,
+  .ui-box {
+    @apply block w-full min-w-0 bg-transparent py-2 text-base text-white placeholder:text-neutral-500 focus:outline-none;
     line-height: 1.4;
   }
-  .ui-input--large input {
-    @apply font-medium;
-    font-size: 1.75rem;
+  .ui-input {
+    @apply border-0 px-0;
   }
-  .ui-input :is(input, textarea)::placeholder {
-    @apply text-neutral-500;
+  .ui-field-row--large .ui-input {
+    @apply text-2xl font-medium sm:text-3xl;
+  }
+  .ui-box {
+    @apply rounded-md border border-neutral-600 px-3 transition-colors hover:border-neutral-500 focus:border-accent;
+  }
+  .ui-box[aria-invalid="true"] {
+    @apply border-red-400;
+  }
+  .ui-textarea {
+    @apply min-h-24 resize-y;
   }
   .ui-hint {
     @apply text-xs text-neutral-500;
   }
   .ui-error {
     @apply text-xs;
-    color: var(--drawably-error);
+    color: #f87171;
   }
 
   /* ── Containers & text ───────────────────────────────── */
@@ -120,7 +141,8 @@
     .ui-button {
       @apply px-5;
     }
-    .ui-input :is(input, textarea) {
+    .ui-input,
+    .ui-box {
       min-height: 44px;
     }
   }
@@ -146,10 +168,10 @@
     @apply shrink-0 px-1.5 py-0.5 text-xs lowercase;
   }
   .ui-toast--error [data-tag] {
-    color: var(--drawably-error);
+    color: #f87171;
   }
   .ui-toast--success [data-tag] {
-    color: var(--drawably-success);
+    color: #86efac;
   }
   .ui-toast-body {
     @apply flex min-w-0 flex-1 flex-col gap-1 break-words;

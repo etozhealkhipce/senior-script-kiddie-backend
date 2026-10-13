@@ -12,13 +12,12 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@block-forge/block-forge-editor": "^1.1.0",
+    "@block-forge/block-forge-editor": "^1.2.0",
     "@editorjs/marker": "^1.4.0",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/montserrat": "^5.3.0",
     "@gsap/react": "^2.1.2",
     "@simplewebauthn/browser": "^14.0.0",
-    "drawably": "^0.4.2",
     "gsap": "^3.15.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",

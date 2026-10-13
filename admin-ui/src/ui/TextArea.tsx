@@ -1,7 +1,5 @@
-import { DrawablyTextarea } from "drawably/react";
 import { type ComponentProps, useId } from "react";
 import { cn } from "./cn";
-import { STILL } from "./motion";
 
 type TextAreaProps = ComponentProps<"textarea"> & {
   label?: string;
@@ -23,14 +21,12 @@ export function TextArea({ label, hint, error, id, className, ...rest }: TextAre
           {label}
         </label>
       )}
-      <DrawablyTextarea
+      <textarea
         {...rest}
         id={areaId}
-        boil={STILL}
-        stroke={error ? "var(--drawably-error)" : undefined}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className="ui-input ui-textarea"
+        className="ui-box ui-textarea"
       />
       {hint && (
         <p id={hintId} className="ui-hint">

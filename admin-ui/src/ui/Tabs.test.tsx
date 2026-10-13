@@ -12,7 +12,6 @@ describe("Tabs", () => {
   it("marks the active tab and is a plain tablist with separators", () => {
     render(<Tabs label="filter" items={[...items]} value="note" onChange={() => {}} />);
     const list = screen.getByRole("tablist", { name: "filter" });
-    expect(list.dataset.drawably).toBeUndefined();
     const seps = list.querySelectorAll(".ui-tab-sep");
     expect(seps).toHaveLength(2);
     for (const sep of seps) {

@@ -1,10 +1,7 @@
-import { DrawablyInput } from "drawably/react";
 import { type ComponentProps, useId } from "react";
 import { cn } from "./cn";
-import { STILL } from "./motion";
 
-// ADAPTATION: drawably's DrawablyOptions.width is a number, clashing with the HTML width attr (string | number).
-type FieldProps = Omit<ComponentProps<"input">, "width"> & {
+type FieldProps = ComponentProps<"input"> & {
   label?: string;
   hint?: string;
   error?: string;
@@ -26,16 +23,20 @@ export function Field({ label, hint, error, prefix, large, id, className, ...res
           {label}
         </label>
       )}
-      <div className="ui-field-row">
+      <div
+        className={cn(
+          "ui-field-row",
+          large && "ui-field-row--large",
+          error && "ui-field-row--error",
+        )}
+      >
         {prefix && <span className="ui-prefix">{prefix}</span>}
-        <DrawablyInput
+        <input
           {...rest}
           id={inputId}
-          boil={STILL}
-          stroke={error ? "var(--drawably-error)" : undefined}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className={cn("ui-input", large && "ui-input--large")}
+          className="ui-input"
         />
       </div>
       {hint && (
